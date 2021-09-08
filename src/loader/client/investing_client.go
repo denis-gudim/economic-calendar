@@ -5,13 +5,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"math/rand"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
 
+	"github.com/PuerkitoBio/goquery"
 	"github.com/google/uuid"
 )
 
@@ -19,20 +19,14 @@ type InvestingHttpClient struct {
 	RetryCount int
 }
 
-func (client *InvestingHttpClient) LoadEventDetailsHtml(eventId int, languageId int) (string, error) {
+func (client *InvestingHttpClient) LoadEventDetailsHtml(eventId, languageId int) (*goquery.Document, error) {
 	language := InvestingLanguagesMap[int32(languageId)]
 	url := fmt.Sprintf("https://%s.investing.com/economic-calendar/%x-%d", language.domain, [16]byte(uuid.New()), eventId)
 
-	response, err := client.doRetryRequest("GET", url, nil, nil)
-
-	if err == nil {
-		return string(response), nil
-	}
-
-	return "", err
+	return client.doHtmlRequest("GET", url, nil, nil)
 }
 
-func (client *InvestingHttpClient) LoadEventsScheduleHtml(from time.Time, to time.Time, languageId int) (string, error) {
+func (client *InvestingHttpClient) LoadEventsScheduleHtml(from, to time.Time, languageId int) (response *goquery.Document, err error) {
 
 	language := InvestingLanguagesMap[int32(languageId)]
 	refererUrl := fmt.Sprintf("https://%s.investing.com/economic-calendar", language.domain)
@@ -57,67 +51,88 @@ func (client *InvestingHttpClient) LoadEventsScheduleHtml(from time.Time, to tim
 		"uuid":          {uuid.New().String()},
 	}
 
-	response, err := client.doRetryRequest("POST", requestUrl, headers, params)
+	responseJson, err := client.doJsonRequest("POST", requestUrl, &headers, &params)
 
 	if err != nil {
-		return "", err
+		return
 	}
 
-	var bodyJson map[string]interface{}
+	data, ok := responseJson["data"]
 
-	if err := json.Unmarshal(response, &bodyJson); err != nil {
-		return "", err
+	if !ok {
+		err = fmt.Errorf("invalid response JSON. data property not found")
+		return
 	}
 
-	return bodyJson["data"].(string), nil
+	tbl := fmt.Sprintf("<table>%s</table>", data)
+
+	return goquery.NewDocumentFromReader(strings.NewReader(tbl))
 }
 
-func (client *InvestingHttpClient) LoadCountriesHtml(languageId int) (string, error) {
+func (client *InvestingHttpClient) LoadCountriesHtml(languageId int) (*goquery.Document, error) {
 	language := InvestingLanguagesMap[int32(languageId)]
 	url := fmt.Sprintf("https://%s.investing.com/economic-calendar/?_uid=%x", language.domain, [16]byte(uuid.New()))
 
-	response, err := client.doRetryRequest("GET", url, nil, nil)
-
-	if err == nil {
-		return string(response), nil
-	}
-
-	return "", err
+	return client.doHtmlRequest("GET", url, nil, nil)
 }
 
-func (client *InvestingHttpClient) doRetryRequest(method string, url string, headers http.Header, body url.Values) ([]byte, error) {
-	var err error
+func (client *InvestingHttpClient) doJsonRequest(method, url string, headers *http.Header, body *url.Values) (response map[string]interface{}, err error) {
+	reader, err := client.doRetryRequest(method, url, headers, body)
+
+	if err != nil {
+		return
+	}
+
+	defer reader.Close()
+
+	err = json.NewDecoder(reader).Decode(&response)
+
+	return
+}
+
+func (client *InvestingHttpClient) doHtmlRequest(method, url string, headers *http.Header, body *url.Values) (response *goquery.Document, err error) {
+	reader, err := client.doRetryRequest(method, url, headers, body)
+
+	if err != nil {
+		return
+	}
+
+	defer reader.Close()
+
+	return goquery.NewDocumentFromReader(reader)
+}
+
+func (client *InvestingHttpClient) doRetryRequest(method, url string, headers *http.Header, body *url.Values) (reader *gzip.Reader, err error) {
 
 	for i := 0; i < client.RetryCount; i++ {
-		resp, err := doRequest(method, url, headers, body)
+		reader, err = doRequest(method, url, headers, body)
 
 		if err == nil {
-			return resp, err
-		} else {
-			fmt.Println(err)
-			continue
+			return
 		}
+
+		fmt.Println(err)
 	}
 
-	return nil, err
+	return
 }
 
-func doRequest(method string, url string, headers http.Header, body url.Values) ([]byte, error) {
+func doRequest(method, url string, headers *http.Header, body *url.Values) (reader *gzip.Reader, err error) {
 
 	var bodyReader io.Reader
 
 	if body != nil {
-		bodyReader = strings.NewReader(shuffleRequestParams(body))
+		bodyReader = strings.NewReader(shuffleRequestParams(*body))
 	}
 
 	request, err := http.NewRequest(method, url, bodyReader)
 
 	if err != nil {
-		return nil, err
+		return
 	}
 
 	if headers != nil {
-		request.Header = headers
+		request.Header = *headers
 	} else {
 		request.Header.Set("Accept", "*/*")
 	}
@@ -129,23 +144,17 @@ func doRequest(method string, url string, headers http.Header, body url.Values) 
 	response, err := http.DefaultClient.Do(request)
 
 	if err != nil {
-		return nil, err
+		return
 	}
 
-	var reader io.ReadCloser
+	responseEncoding := response.Header.Get("Content-Encoding")
 
-	switch response.Header.Get("Content-Encoding") {
-	case "gzip":
-		if reader, err = gzip.NewReader(response.Body); err != nil {
-			return nil, err
-		}
-	default:
-		reader = response.Body
+	if responseEncoding != "gzip" {
+		err = fmt.Errorf("invalid response encoding '%s'", responseEncoding)
+		return
 	}
 
-	defer reader.Close()
-
-	return ioutil.ReadAll(reader)
+	return gzip.NewReader(response.Body)
 }
 
 func shuffleRequestParams(body url.Values) string {
