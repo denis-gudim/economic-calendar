@@ -20,16 +20,16 @@ type InvestingHttpClient struct {
 }
 
 func (client *InvestingHttpClient) LoadEventDetailsHtml(eventId, languageId int) (*goquery.Document, error) {
-	language := InvestingLanguagesMap[int32(languageId)]
-	url := fmt.Sprintf("https://%s.investing.com/economic-calendar/%x-%d", language.domain, [16]byte(uuid.New()), eventId)
+	language := InvestingLanguagesMap[languageId]
+	url := fmt.Sprintf("https://%s.investing.com/economic-calendar/%x-%d", language.Domain, [16]byte(uuid.New()), eventId)
 
 	return client.doHtmlRequest("GET", url, nil, nil)
 }
 
 func (client *InvestingHttpClient) LoadEventsScheduleHtml(from, to time.Time, languageId int) (response *goquery.Document, err error) {
 
-	language := InvestingLanguagesMap[int32(languageId)]
-	refererUrl := fmt.Sprintf("https://%s.investing.com/economic-calendar", language.domain)
+	language := InvestingLanguagesMap[languageId]
+	refererUrl := fmt.Sprintf("https://%s.investing.com/economic-calendar", language.Domain)
 	requestUrl := fmt.Sprintf("%s/Service/getCalendarFilteredData", refererUrl)
 
 	headers := http.Header{
@@ -70,8 +70,8 @@ func (client *InvestingHttpClient) LoadEventsScheduleHtml(from, to time.Time, la
 }
 
 func (client *InvestingHttpClient) LoadCountriesHtml(languageId int) (*goquery.Document, error) {
-	language := InvestingLanguagesMap[int32(languageId)]
-	url := fmt.Sprintf("https://%s.investing.com/economic-calendar/?_uid=%x", language.domain, [16]byte(uuid.New()))
+	language := InvestingLanguagesMap[languageId]
+	url := fmt.Sprintf("https://%s.investing.com/economic-calendar/?_uid=%x", language.Domain, [16]byte(uuid.New()))
 
 	return client.doHtmlRequest("GET", url, nil, nil)
 }

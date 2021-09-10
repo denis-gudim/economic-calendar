@@ -1,12 +1,12 @@
 package client
 
 type InvestingLanugage struct {
-	id     int32
-	code   string
-	domain string
+	Id     int32
+	Code   string
+	Domain string
 }
 
-var InvestingLanguagesMap = map[int32]InvestingLanugage{
+var InvestingLanguagesMap = map[int]InvestingLanugage{
 	1:  {1, "en", "www"},
 	2:  {2, "he", "il"},
 	3:  {3, "ar", "sa"},
