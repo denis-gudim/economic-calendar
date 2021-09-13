@@ -1,6 +1,7 @@
 package client
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -57,31 +58,60 @@ func TestParseCountryHtml(t *testing.T) {
 }
 
 func TestParseCountriesHtml(t *testing.T) {
-	// Arrange
-	htmlStr := `<html>
+
+	tests := []struct {
+		html   string
+		result []*InvestingCountry
+		err    error
+	}{
+		{
+			html: `<ul>
+						<li><input value="1"><label>Text 1</label></li>
+						<li><input value="2"><label>Text 2</label></li>
+					</ul>`,
+			result: []*InvestingCountry{
+				{1, "Text 1", 0},
+				{2, "Text 2", 0},
+			},
+			err: nil,
+		},
+		{
+			html:   `<div></div>`,
+			result: nil,
+			err:    &ParsingError{},
+		},
+		{
+			html:   ``,
+			result: nil,
+			err:    &ParsingError{},
+		},
+	}
+
+	for _, test := range tests {
+
+		// Arrange
+		htmlStr := fmt.Sprintf(
+			`<html>
 					<head><title>Title</title></head>
 					<body>
 						<div></div>
-						<div id="filtersWrapper">
-							<ul>
-								<li><input value="1"><label>Text 1</label></li>
-								<li><input value="2"><label>Text 2</label></li>
-							</ul>
-						</div>
+						<div id="filtersWrapper">%s</div>
 					</body>
-				</html>`
-	htmlDoc, _ := goquery.NewDocumentFromReader(strings.NewReader(htmlStr))
+				</html>`, test.html)
 
-	// Act
-	countres, err := parseCountriesHtml(htmlDoc)
+		var htmlDoc *goquery.Document
 
-	// Assert
-	assert.Nil(t, err)
-	assert.Len(t, countres, 2)
+		if len(test.html) > 0 {
+			htmlDoc, _ = goquery.NewDocumentFromReader(strings.NewReader(htmlStr))
+		} else {
+			htmlDoc = nil
+		}
 
-	assert.Equal(t, 1, countres[0].Id)
-	assert.Equal(t, "Text 1", countres[0].Title)
+		// Act
+		countres, err := parseCountriesHtml(htmlDoc)
 
-	assert.Equal(t, 2, countres[1].Id)
-	assert.Equal(t, "Text 2", countres[1].Title)
+		// Assert
+		assert.IsType(t, test.err, err)
+		assert.Equal(t, test.result, countres)
+	}
 }

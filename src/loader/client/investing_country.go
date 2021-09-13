@@ -44,13 +44,13 @@ func parseCountriesHtml(html *goquery.Document) (countries []*InvestingCountry, 
 
 	if html == nil {
 		return nil, &ParsingError{
-			Err: errors.New("invalid html value nil"),
+			Err: errors.New("argument html value is nil"),
 		}
 	}
 
 	countriesHtml := html.Find("#filtersWrapper ul li")
 
-	if countriesHtml == nil {
+	if countriesHtml == nil || len(countriesHtml.Nodes) == 0 {
 		return nil, &ParsingError{
 			Err: errors.New("couldn't find country tags into html"),
 		}
