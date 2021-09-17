@@ -3,6 +3,7 @@ package client
 import (
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/PuerkitoBio/goquery"
 )
@@ -40,4 +41,16 @@ func parseAttrValueToInt(s *goquery.Selection, attrName string) (value int, err 
 	}
 
 	return
+}
+
+func normalizeHtmlText(text string) string {
+
+	if len(text) <= 0 {
+		return text
+	}
+
+	text = strings.Replace(text, "&nbsp;", " ", -1)
+	text = strings.Replace(text, "&#039;", "'", -1)
+
+	return strings.TrimSpace(text)
 }

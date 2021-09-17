@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"regexp"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
@@ -161,7 +160,7 @@ func (parser *InvestingScheduleParser) parseScheduleTitle(s *goquery.Selection) 
 		}
 	}
 
-	title = strings.TrimSpace(cell.Text())
+	title = normalizeHtmlText(cell.Text())
 
 	return
 }
@@ -175,7 +174,7 @@ func (parser *InvestingScheduleParser) parseScheduleCurrencyCode(s *goquery.Sele
 		}
 	}
 
-	code = strings.TrimSpace(cell.Text())
+	code = normalizeHtmlText(cell.Text())
 
 	return
 }
@@ -203,8 +202,7 @@ func (parser *InvestingScheduleParser) parseIndexValue(s *goquery.Selection, cla
 		}
 	}
 
-	valueStr := strings.TrimSpace(cell.Text())
-	valueStr = strings.Replace(valueStr, "&nbsp;", "", -1)
+	valueStr := normalizeHtmlText(cell.Text())
 
 	if len(valueStr) <= 0 {
 		return nil, nil

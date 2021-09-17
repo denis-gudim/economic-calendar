@@ -10,11 +10,11 @@ import (
 	"golang.org/x/net/html"
 )
 
-func TestParseScheduleRowHtml(t *testing.T) {
+func Test_InvestingScheduleParser_ParseScheduleRowHtml(t *testing.T) {
 	tests := []struct {
-		html   string
-		result *InvestingScheduleRow
-		err    error
+		html           string
+		expectedResult *InvestingScheduleRow
+		err            error
 	}{
 		{
 			html: `<table>
@@ -33,7 +33,7 @@ func TestParseScheduleRowHtml(t *testing.T) {
 							</td>
 						</tr>
 					</table>`,
-			result: &InvestingScheduleRow{
+			expectedResult: &InvestingScheduleRow{
 				Id:           436932,
 				EventId:      377,
 				TimeStamp:    time.Date(2021, time.September, 16, 8, 0, 0, 0, time.UTC),
@@ -54,8 +54,8 @@ func TestParseScheduleRowHtml(t *testing.T) {
 							<td colspan="9" class="theDay" id="theDay1631750400">Thursday, September 16, 2021</td>
 						</tr>
 					</table>`,
-			result: nil,
-			err:    nil,
+			expectedResult: nil,
+			err:            nil,
 		},
 	}
 
@@ -66,34 +66,34 @@ func TestParseScheduleRowHtml(t *testing.T) {
 
 		// Act
 		parser := NewInvestingScheduleParser()
-		value, err := parser.parseScheduleRowHtml(selector)
+		actualResult, err := parser.parseScheduleRowHtml(selector)
 
 		// Assert
 		assert.IsType(t, test.err, err)
-		assert.Equal(t, test.result, value)
+		assert.Equal(t, test.expectedResult, actualResult)
 	}
 }
 
-func TestParseScheduleRowId(t *testing.T) {
+func Test_InvestingScheduleParser_ParseScheduleRowId(t *testing.T) {
 	tests := []struct {
-		html   string
-		result int
-		err    error
+		html           string
+		expectedResult int
+		err            error
 	}{
 		{
-			html:   `<div id="row123456"></div>`,
-			result: 123456,
-			err:    nil,
+			html:           `<div id="row123456"></div>`,
+			expectedResult: 123456,
+			err:            nil,
 		},
 		{
-			html:   `<div></div>`,
-			result: 0,
-			err:    &ParsingError{},
+			html:           `<div></div>`,
+			expectedResult: 0,
+			err:            &ParsingError{},
 		},
 		{
-			html:   `<div id="rowABC"></div>`,
-			result: 0,
-			err:    &ParsingError{},
+			html:           `<div id="rowABC"></div>`,
+			expectedResult: 0,
+			err:            &ParsingError{},
 		},
 	}
 
@@ -104,34 +104,34 @@ func TestParseScheduleRowId(t *testing.T) {
 
 		// Act
 		parser := NewInvestingScheduleParser()
-		value, err := parser.parseScheduleRowId(selector)
+		actualResult, err := parser.parseScheduleRowId(selector)
 
 		// Assert
 		assert.IsType(t, test.err, err)
-		assert.Equal(t, test.result, value)
+		assert.Equal(t, test.expectedResult, actualResult)
 	}
 }
 
-func TestParseScheduleCountryName(t *testing.T) {
+func Test_InvestingScheduleParser_ParseScheduleCountryName(t *testing.T) {
 	tests := []struct {
-		html   string
-		result string
-		err    error
+		html           string
+		expectedResult string
+		err            error
 	}{
 		{
-			html:   `<tr><td><span class="ceFlags" title="China"></span></td></tr>`,
-			result: "China",
-			err:    nil,
+			html:           `<tr><td><span class="ceFlags" title="China"></span></td></tr>`,
+			expectedResult: "China",
+			err:            nil,
 		},
 		{
-			html:   `<tr><td><span class="ceFlags"></span></td></tr>`,
-			result: "",
-			err:    &ParsingError{},
+			html:           `<tr><td><span class="ceFlags"></span></td></tr>`,
+			expectedResult: "",
+			err:            &ParsingError{},
 		},
 		{
-			html:   `<tr><td></td><td></td><td></td></tr>`,
-			result: "",
-			err:    &ParsingError{},
+			html:           `<tr><td></td><td></td><td></td></tr>`,
+			expectedResult: "",
+			err:            &ParsingError{},
 		},
 	}
 
@@ -142,34 +142,34 @@ func TestParseScheduleCountryName(t *testing.T) {
 
 		// Act
 		parser := NewInvestingScheduleParser()
-		value, err := parser.parseScheduleCountryName(selector)
+		actualResult, err := parser.parseScheduleCountryName(selector)
 
 		// Assert
 		assert.IsType(t, test.err, err)
-		assert.Equal(t, test.result, value)
+		assert.Equal(t, test.expectedResult, actualResult)
 	}
 }
 
-func TestParseScheduleTimeStamp(t *testing.T) {
+func Test_InvestingScheduleParser_ParseScheduleTimeStamp(t *testing.T) {
 	tests := []struct {
-		html   string
-		result time.Time
-		err    error
+		html           string
+		expectedResult time.Time
+		err            error
 	}{
 		{
-			html:   `<div data-event-datetime="2021/09/16 08:00:00"></div>`,
-			result: time.Date(2021, time.September, 16, 8, 0, 0, 0, time.UTC),
-			err:    nil,
+			html:           `<div data-event-datetime="2021/09/16 08:00:00"></div>`,
+			expectedResult: time.Date(2021, time.September, 16, 8, 0, 0, 0, time.UTC),
+			err:            nil,
 		},
 		{
-			html:   `<div data-event-datetime="abcd"></div>`,
-			result: time.Time{},
-			err:    &ParsingError{},
+			html:           `<div data-event-datetime="abcd"></div>`,
+			expectedResult: time.Time{},
+			err:            &ParsingError{},
 		},
 		{
-			html:   `<div></div>`,
-			result: time.Time{},
-			err:    &ParsingError{},
+			html:           `<div></div>`,
+			expectedResult: time.Time{},
+			err:            &ParsingError{},
 		},
 	}
 
@@ -180,19 +180,19 @@ func TestParseScheduleTimeStamp(t *testing.T) {
 
 		// Act
 		parser := NewInvestingScheduleParser()
-		value, err := parser.parseScheduleTimeStamp(selector)
+		actualResult, err := parser.parseScheduleTimeStamp(selector)
 
 		// Assert
 		assert.IsType(t, test.err, err)
-		assert.Equal(t, test.result, value)
+		assert.Equal(t, test.expectedResult, actualResult)
 	}
 }
 
-func TestParseScheduleEventType(t *testing.T) {
+func Test_InvestingScheduleParser_ParseScheduleEventType(t *testing.T) {
 	tests := []struct {
-		html   string
-		result ScheduleEventType
-		err    error
+		html           string
+		expectedResult ScheduleEventType
+		err            error
 	}{
 		{
 			html: `<table>
@@ -200,8 +200,8 @@ func TestParseScheduleEventType(t *testing.T) {
 							<td class="event"><a href="#">abc</a></td>
 						</tr>
 					</table>`,
-			result: Index,
-			err:    nil,
+			expectedResult: Index,
+			err:            nil,
 		},
 		{
 			html: `<table>
@@ -209,8 +209,8 @@ func TestParseScheduleEventType(t *testing.T) {
 							<td class="event"><a href="#">abc</a> <span data-img_key="perliminary"></span></td>
 						</tr>
 					</table>`,
-			result: PreliminaryRelease,
-			err:    nil,
+			expectedResult: PreliminaryRelease,
+			err:            nil,
 		},
 		{
 			html: `<table>
@@ -218,8 +218,8 @@ func TestParseScheduleEventType(t *testing.T) {
 							<td class="event"><a href="#">abc</a> <span data-img_key="speach"></span></td>
 						</tr>
 					</table>`,
-			result: Speech,
-			err:    nil,
+			expectedResult: Speech,
+			err:            nil,
 		},
 		{
 			html: `<table>
@@ -227,8 +227,8 @@ func TestParseScheduleEventType(t *testing.T) {
 							<td class="event"><a href="#">abc</a> <span data-img_key="report"></span></td>
 						</tr>
 					</table>`,
-			result: Report,
-			err:    nil,
+			expectedResult: Report,
+			err:            nil,
 		},
 		{
 			html: `<table>
@@ -236,8 +236,8 @@ func TestParseScheduleEventType(t *testing.T) {
 							<td class="event"><a href="#">abc</a> <span data-img_key="sandClock"></span></td>
 						</tr>
 					</table>`,
-			result: RetrievingData,
-			err:    nil,
+			expectedResult: RetrievingData,
+			err:            nil,
 		},
 		{
 			html: `<table>
@@ -245,8 +245,8 @@ func TestParseScheduleEventType(t *testing.T) {
 							<td class="event"><a href="#">abc</a> <span></span></td>
 						</tr>
 					</table>`,
-			result: Index,
-			err:    &ParsingError{},
+			expectedResult: Index,
+			err:            &ParsingError{},
 		},
 	}
 
@@ -257,10 +257,10 @@ func TestParseScheduleEventType(t *testing.T) {
 
 		// Act
 		parser := NewInvestingScheduleParser()
-		value, err := parser.parseScheduleEventType(selector)
+		actualResult, err := parser.parseScheduleEventType(selector)
 
 		// Assert
 		assert.IsType(t, test.err, err)
-		assert.Equal(t, test.result, value)
+		assert.Equal(t, test.expectedResult, actualResult)
 	}
 }

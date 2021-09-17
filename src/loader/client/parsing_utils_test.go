@@ -77,3 +77,37 @@ func TestParseAttrValueToInt(t *testing.T) {
 		assert.Equal(t, test.result, value)
 	}
 }
+
+func Test_NormalizeHtmlText(t *testing.T) {
+	tests := []struct {
+		text           string
+		expectedResult string
+	}{
+		{
+			text:           `input&#039;s`,
+			expectedResult: "input's",
+		},
+		{
+			text:           `text&nbsp;`,
+			expectedResult: "text",
+		},
+		{
+			text:           `    text   `,
+			expectedResult: "text",
+		},
+		{
+			text:           ``,
+			expectedResult: "",
+		},
+	}
+
+	for _, test := range tests {
+		// Arrange
+
+		// Act
+		actualResult := normalizeHtmlText(test.text)
+
+		// Assert
+		assert.Equal(t, test.expectedResult, actualResult)
+	}
+}

@@ -7,11 +7,11 @@ import (
 type ScheduleEventType int
 
 const (
-	Index              ScheduleEventType = iota
-	Speech             ScheduleEventType = iota
-	PreliminaryRelease ScheduleEventType = iota
-	Report             ScheduleEventType = iota
-	RetrievingData     ScheduleEventType = iota
+	Index ScheduleEventType = iota
+	Speech
+	PreliminaryRelease
+	Report
+	RetrievingData
 )
 
 type InvestingScheduleRow struct {
