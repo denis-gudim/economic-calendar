@@ -1,6 +1,7 @@
-package client
+package parsing
 
 import (
+	"economic-calendar/loader/investing/data"
 	"strings"
 	"testing"
 
@@ -12,7 +13,7 @@ import (
 func Test_InvestingCalendarEventParser_ParseCalendarEventHtml(t *testing.T) {
 	tests := []struct {
 		html           string
-		expectedResult *InvestingCalendarEvent
+		expectedResult *data.InvestingCalendarEvent
 		err            error
 	}{
 		{
@@ -36,7 +37,7 @@ func Test_InvestingCalendarEventParser_ParseCalendarEventHtml(t *testing.T) {
 							</div>
 						</div>
 					</section>`,
-			expectedResult: &InvestingCalendarEvent{
+			expectedResult: &data.InvestingCalendarEvent{
 				Title:     "U.K. Core Retail Sales MoM",
 				Overview:  "The University of Michigan Consumer Sentiment Index.",
 				Source:    "University of Michigan",
@@ -54,7 +55,7 @@ func Test_InvestingCalendarEventParser_ParseCalendarEventHtml(t *testing.T) {
 		parser := NewInvestingCalendarEventParser()
 
 		// Act
-		actualResult, err := parser.parseCalendarEventHtml(html)
+		actualResult, err := parser.ParseCalendarEventHtml(html)
 
 		// Assert
 		assert.IsType(t, test.err, err)
@@ -62,37 +63,37 @@ func Test_InvestingCalendarEventParser_ParseCalendarEventHtml(t *testing.T) {
 	}
 }
 
-func Test_InvestingCalendarEventParser_ParserTitle(t *testing.T) {
+func Test_InvestingCalendarEventParser_parserTitle(t *testing.T) {
 	tests := []struct {
-		html   string
-		result string
-		err    error
+		html           string
+		expectedResult string
+		err            error
 	}{
 		{
 			html: `<section id="leftColumn">
 						<h1 class="ecTitle float_lang_base_1 relativeAttr">U.K. Core Retail Sales MoM	</h1>
 					</section>`,
-			result: "U.K. Core Retail Sales MoM",
-			err:    nil,
+			expectedResult: "U.K. Core Retail Sales MoM",
+			err:            nil,
 		},
 		{
 			html: `<section id="leftColumn">
 						<h1 class="ecTitle float_lang_base_1 relativeAttr"></h1>
 					</section>`,
-			result: "",
-			err:    &ParsingError{},
+			expectedResult: "",
+			err:            &ParsingError{},
 		},
 		{
 			html: `<section id="leftColumn">
 						<h1>U.K. Core Retail Sales MoM	</h1>
 					</section>`,
-			result: "",
-			err:    &ParsingError{},
+			expectedResult: "",
+			err:            &ParsingError{},
 		},
 		{
-			html:   `<section id="leftColumn"></section>`,
-			result: "",
-			err:    &ParsingError{},
+			html:           `<section id="leftColumn"></section>`,
+			expectedResult: "",
+			err:            &ParsingError{},
 		},
 	}
 
@@ -103,11 +104,11 @@ func Test_InvestingCalendarEventParser_ParserTitle(t *testing.T) {
 		parser := NewInvestingCalendarEventParser()
 
 		// Act
-		title, err := parser.parseTitle(selection)
+		actualResult, err := parser.parseTitle(selection)
 
 		// Assert
 		assert.IsType(t, test.err, err)
-		assert.Equal(t, test.result, title)
+		assert.Equal(t, test.expectedResult, actualResult)
 	}
 }
 

@@ -1,4 +1,4 @@
-package client
+package parsing
 
 type ParsingError struct {
 	Html string

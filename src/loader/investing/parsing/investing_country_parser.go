@@ -1,6 +1,7 @@
-package client
+package parsing
 
 import (
+	"economic-calendar/loader/investing/data"
 	"errors"
 	"strconv"
 
@@ -10,7 +11,7 @@ import (
 type InvestingCountryParser struct {
 }
 
-func (parser *InvestingCountryParser) parseCountryHtml(selection *goquery.Selection) (*InvestingCountry, error) {
+func (parser *InvestingCountryParser) parseCountryHtml(selection *goquery.Selection) (*data.InvestingCountry, error) {
 
 	idValueStr, exists := selection.Find("input").Attr("value")
 
@@ -34,10 +35,10 @@ func (parser *InvestingCountryParser) parseCountryHtml(selection *goquery.Select
 		}
 	}
 
-	return &InvestingCountry{id, title, 0}, nil
+	return &data.InvestingCountry{Id: id, Title: title, LanguageId: 0}, nil
 }
 
-func (parser *InvestingCountryParser) parseCountriesHtml(html *goquery.Document) (countries []*InvestingCountry, err error) {
+func (parser *InvestingCountryParser) ParseCountriesHtml(html *goquery.Document) (countries []*data.InvestingCountry, err error) {
 
 	if html == nil {
 		return nil, &ParsingError{
@@ -45,7 +46,7 @@ func (parser *InvestingCountryParser) parseCountriesHtml(html *goquery.Document)
 		}
 	}
 
-	countriesHtml := html.Find("#filtersWrapper ul li")
+	countriesHtml := html.Find("#filtersWrapper ul.countryOption li")
 
 	if countriesHtml == nil || len(countriesHtml.Nodes) == 0 {
 		return nil, &ParsingError{
@@ -53,7 +54,7 @@ func (parser *InvestingCountryParser) parseCountriesHtml(html *goquery.Document)
 		}
 	}
 
-	countries = make([]*InvestingCountry, len(countriesHtml.Nodes))
+	countries = make([]*data.InvestingCountry, len(countriesHtml.Nodes))
 
 	countriesHtml.EachWithBreak(func(i int, s *goquery.Selection) bool {
 

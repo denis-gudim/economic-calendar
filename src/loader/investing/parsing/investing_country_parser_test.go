@@ -1,6 +1,7 @@
-package client
+package parsing
 
 import (
+	"economic-calendar/loader/investing/data"
 	"fmt"
 	"strings"
 	"testing"
@@ -13,13 +14,17 @@ import (
 func Test_InvestingCountryParser_ParseCountryHtml(t *testing.T) {
 	tests := []struct {
 		html           string
-		expectedResult *InvestingCountry
+		expectedResult *data.InvestingCountry
 		err            error
 	}{
 		{
-			html:           `<li><input value="123"><label>Text</label></li>`,
-			expectedResult: &InvestingCountry{123, "Text", 0},
-			err:            nil,
+			html: `<li><input value="123"><label>Text</label></li>`,
+			expectedResult: &data.InvestingCountry{
+				Id:         123,
+				Title:      "Text",
+				LanguageId: 0,
+			},
+			err: nil,
 		},
 		{
 			html:           `<li><label>Text</label></li>`,
@@ -62,17 +67,17 @@ func Test_InvestingCountryParser_ParseCountriesHtml(t *testing.T) {
 
 	tests := []struct {
 		html           string
-		expectedResult []*InvestingCountry
+		expectedResult []*data.InvestingCountry
 		err            error
 	}{
 		{
-			html: `<ul>
+			html: `<ul class="countryOption">
 						<li><input value="1"><label>Text 1</label></li>
 						<li><input value="2"><label>Text 2</label></li>
 					</ul>`,
-			expectedResult: []*InvestingCountry{
-				{1, "Text 1", 0},
-				{2, "Text 2", 0},
+			expectedResult: []*data.InvestingCountry{
+				{Id: 1, Title: "Text 1", LanguageId: 0},
+				{Id: 2, Title: "Text 2", LanguageId: 0},
 			},
 			err: nil,
 		},
@@ -111,7 +116,7 @@ func Test_InvestingCountryParser_ParseCountriesHtml(t *testing.T) {
 		parser := &InvestingCountryParser{}
 
 		// Act
-		actualResult, err := parser.parseCountriesHtml(htmlDoc)
+		actualResult, err := parser.ParseCountriesHtml(htmlDoc)
 
 		// Assert
 		assert.IsType(t, test.err, err)

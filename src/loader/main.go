@@ -1,24 +1,40 @@
 package main
 
 import (
-	"economic-calendar/loader/client"
+	"economic-calendar/loader/investing/client"
 	"fmt"
-	"time"
+	"os"
+
+	log "github.com/sirupsen/logrus"
 )
 
+func init() {
+	log.SetFormatter(&log.TextFormatter{})
+	log.SetOutput(os.Stdout)
+	log.SetLevel(log.InfoLevel)
+}
+
 func main() {
-	clt := &client.InvestingHttpClient{RetryCount: 10}
+
+	repository := &client.InvestingRepository{
+		Source: &client.InvestingHttpClient{
+			RetryCount: 10,
+		},
+		BatchSize:         4,
+		DefaultLanguageId: 1,
+	}
+
+	//clt := &client.InvestingHttpClient{RetryCount: 10}
 
 	//resp, err := clt.LoadEventDetailsHtml(1234, 1)
 	//resp, err := clt.LoadCountriesHtml(1)
-	for languageId, language := range client.InvestingLanguagesMap {
+	//t := time.Date(2021, 9, 17, 0, 0, 0, 0, time.UTC)
+	//items, err := repository.GetEventsSchedule(t, t)
+	items, err := repository.GetCountries()
 
-		resp, err := clt.LoadEventsScheduleHtml(time.Now(), time.Now(), languageId)
-
-		if err == nil {
-			fmt.Printf("%s OK nodes %v\n", language.Code, len(resp.Nodes))
-		} else {
-			fmt.Printf("%s ERR %v\n", language.Code, err)
-		}
+	if err == nil {
+		fmt.Printf("OK nodes %v\n", len(items))
+	} else {
+		fmt.Printf("ERR %v\n", err)
 	}
 }

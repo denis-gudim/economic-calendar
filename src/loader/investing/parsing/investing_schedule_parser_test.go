@@ -1,6 +1,7 @@
-package client
+package parsing
 
 import (
+	"economic-calendar/loader/investing/data"
 	"strings"
 	"testing"
 	"time"
@@ -13,7 +14,7 @@ import (
 func Test_InvestingScheduleParser_ParseScheduleRowHtml(t *testing.T) {
 	tests := []struct {
 		html           string
-		expectedResult *InvestingScheduleRow
+		expectedResult *data.InvestingScheduleRow
 		err            error
 	}{
 		{
@@ -33,7 +34,7 @@ func Test_InvestingScheduleParser_ParseScheduleRowHtml(t *testing.T) {
 							</td>
 						</tr>
 					</table>`,
-			expectedResult: &InvestingScheduleRow{
+			expectedResult: &data.InvestingScheduleRow{
 				Id:           436932,
 				EventId:      377,
 				TimeStamp:    time.Date(2021, time.September, 16, 8, 0, 0, 0, time.UTC),
@@ -44,18 +45,9 @@ func Test_InvestingScheduleParser_ParseScheduleRowHtml(t *testing.T) {
 				Actual:       &[]float64{5.8}[0],
 				Forecast:     nil,
 				Previous:     &[]float64{-20.5}[0],
-				Type:         Index,
+				Type:         data.Index,
 			},
 			err: nil,
-		},
-		{
-			html: `<table>
-						<tr>
-							<td colspan="9" class="theDay" id="theDay1631750400">Thursday, September 16, 2021</td>
-						</tr>
-					</table>`,
-			expectedResult: nil,
-			err:            nil,
 		},
 	}
 
@@ -191,7 +183,7 @@ func Test_InvestingScheduleParser_ParseScheduleTimeStamp(t *testing.T) {
 func Test_InvestingScheduleParser_ParseScheduleEventType(t *testing.T) {
 	tests := []struct {
 		html           string
-		expectedResult ScheduleEventType
+		expectedResult data.ScheduleEventType
 		err            error
 	}{
 		{
@@ -200,7 +192,7 @@ func Test_InvestingScheduleParser_ParseScheduleEventType(t *testing.T) {
 							<td class="event"><a href="#">abc</a></td>
 						</tr>
 					</table>`,
-			expectedResult: Index,
+			expectedResult: data.Index,
 			err:            nil,
 		},
 		{
@@ -209,7 +201,7 @@ func Test_InvestingScheduleParser_ParseScheduleEventType(t *testing.T) {
 							<td class="event"><a href="#">abc</a> <span data-img_key="perliminary"></span></td>
 						</tr>
 					</table>`,
-			expectedResult: PreliminaryRelease,
+			expectedResult: data.PreliminaryRelease,
 			err:            nil,
 		},
 		{
@@ -218,7 +210,7 @@ func Test_InvestingScheduleParser_ParseScheduleEventType(t *testing.T) {
 							<td class="event"><a href="#">abc</a> <span data-img_key="speach"></span></td>
 						</tr>
 					</table>`,
-			expectedResult: Speech,
+			expectedResult: data.Speech,
 			err:            nil,
 		},
 		{
@@ -227,7 +219,7 @@ func Test_InvestingScheduleParser_ParseScheduleEventType(t *testing.T) {
 							<td class="event"><a href="#">abc</a> <span data-img_key="report"></span></td>
 						</tr>
 					</table>`,
-			expectedResult: Report,
+			expectedResult: data.Report,
 			err:            nil,
 		},
 		{
@@ -236,7 +228,7 @@ func Test_InvestingScheduleParser_ParseScheduleEventType(t *testing.T) {
 							<td class="event"><a href="#">abc</a> <span data-img_key="sandClock"></span></td>
 						</tr>
 					</table>`,
-			expectedResult: RetrievingData,
+			expectedResult: data.RetrievingData,
 			err:            nil,
 		},
 		{
@@ -245,7 +237,7 @@ func Test_InvestingScheduleParser_ParseScheduleEventType(t *testing.T) {
 							<td class="event"><a href="#">abc</a> <span></span></td>
 						</tr>
 					</table>`,
-			expectedResult: Index,
+			expectedResult: data.Index,
 			err:            &ParsingError{},
 		},
 	}

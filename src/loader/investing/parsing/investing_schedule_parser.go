@@ -1,6 +1,7 @@
-package client
+package parsing
 
 import (
+	"economic-calendar/loader/investing/data"
 	"fmt"
 	"regexp"
 	"strconv"
@@ -21,7 +22,7 @@ func NewInvestingScheduleParser() *InvestingScheduleParser {
 	}
 }
 
-func (parser *InvestingScheduleParser) parseScheduleRowHtml(s *goquery.Selection) (row *InvestingScheduleRow, err error) {
+func (parser *InvestingScheduleParser) ParseScheduleHtml(s *goquery.Document) (items []*data.InvestingScheduleRow, err error) {
 
 	if s == nil {
 		return nil, &ParsingError{
@@ -29,75 +30,85 @@ func (parser *InvestingScheduleParser) parseScheduleRowHtml(s *goquery.Selection
 		}
 	}
 
-	_, idAttrExists := s.Attr("id")
-	_, eventIdAttrExists := s.Attr("event_attr_id")
+	tableRows := s.Find("table tr[event_attr_id]")
 
-	if idAttrExists && eventIdAttrExists {
+	items = make([]*data.InvestingScheduleRow, len(tableRows.Nodes))
 
-		row = &InvestingScheduleRow{}
+	tableRows.EachWithBreak(func(i int, s *goquery.Selection) bool {
 
-		row.Id, err = parser.parseScheduleRowId(s)
+		items[i], err = parser.parseScheduleRowHtml(s)
 
-		if err != nil {
-			return
-		}
+		return err == nil
+	})
 
-		row.EventId, err = parseAttrValueToInt(s, "event_attr_id")
+	return
+}
 
-		if err != nil {
-			return
-		}
+func (parser *InvestingScheduleParser) parseScheduleRowHtml(s *goquery.Selection) (row *data.InvestingScheduleRow, err error) {
 
-		row.TimeStamp, err = parser.parseScheduleTimeStamp(s)
+	row = &data.InvestingScheduleRow{}
 
-		if err != nil {
-			return
-		}
+	row.Id, err = parser.parseScheduleRowId(s)
 
-		row.Title, err = parser.parseScheduleTitle(s)
-
-		if err != nil {
-			return
-		}
-
-		row.CurrencyCode, err = parser.parseScheduleCurrencyCode(s)
-
-		if err != nil {
-			return
-		}
-
-		row.Sentiment, err = parser.parseScheduleSentiment(s)
-
-		if err != nil {
-			return
-		}
-
-		row.CountryName, err = parser.parseScheduleCountryName(s)
-
-		if err != nil {
-			return
-		}
-
-		row.Actual, err = parser.parseIndexValue(s, "act", "actual")
-
-		if err != nil {
-			return
-		}
-
-		row.Forecast, err = parser.parseIndexValue(s, "fore", "forecast")
-
-		if err != nil {
-			return
-		}
-
-		row.Previous, err = parser.parseIndexValue(s, "prev", "previous")
-
-		if err != nil {
-			return
-		}
-
-		row.Type, err = parser.parseScheduleEventType(s)
+	if err != nil {
+		return
 	}
+
+	row.EventId, err = parseAttrValueToInt(s, "event_attr_id")
+
+	if err != nil {
+		return
+	}
+
+	row.TimeStamp, err = parser.parseScheduleTimeStamp(s)
+
+	if err != nil {
+		return
+	}
+
+	row.Title, err = parser.parseScheduleTitle(s)
+
+	if err != nil {
+		return
+	}
+
+	row.CurrencyCode, err = parser.parseScheduleCurrencyCode(s)
+
+	if err != nil {
+		return
+	}
+
+	row.Sentiment, err = parser.parseScheduleSentiment(s)
+
+	if err != nil {
+		return
+	}
+
+	row.CountryName, err = parser.parseScheduleCountryName(s)
+
+	if err != nil {
+		return
+	}
+
+	row.Actual, err = parser.parseIndexValue(s, "act", "actual")
+
+	if err != nil {
+		return
+	}
+
+	row.Forecast, err = parser.parseIndexValue(s, "fore", "forecast")
+
+	if err != nil {
+		return
+	}
+
+	row.Previous, err = parser.parseIndexValue(s, "prev", "previous")
+
+	if err != nil {
+		return
+	}
+
+	row.Type, err = parser.parseScheduleEventType(s)
 
 	return
 }
@@ -219,11 +230,11 @@ func (parser *InvestingScheduleParser) parseIndexValue(s *goquery.Selection, cla
 	return &number, err
 }
 
-func (parser *InvestingScheduleParser) parseScheduleEventType(s *goquery.Selection) (eventType ScheduleEventType, err error) {
+func (parser *InvestingScheduleParser) parseScheduleEventType(s *goquery.Selection) (eventType data.ScheduleEventType, err error) {
 	tag := s.Find("td.event span")
 
 	if len(tag.Nodes) <= 0 {
-		return Index, nil
+		return data.Index, nil
 	}
 
 	typeStr, err := getAttrValue(tag, "data-img_key")
@@ -234,16 +245,16 @@ func (parser *InvestingScheduleParser) parseScheduleEventType(s *goquery.Selecti
 
 	switch typeStr {
 	case "perliminary":
-		return PreliminaryRelease, nil
+		return data.PreliminaryRelease, nil
 	case "speach":
-		return Speech, nil
+		return data.Speech, nil
 	case "report":
-		return Report, nil
+		return data.Report, nil
 	case "sandClock":
-		return RetrievingData, nil
+		return data.RetrievingData, nil
 	}
 
-	return Index, &ParsingError{
+	return data.Index, &ParsingError{
 		Err: fmt.Errorf("invalid html. unknown event type %s", typeStr),
 	}
 }
