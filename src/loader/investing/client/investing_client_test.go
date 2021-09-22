@@ -19,7 +19,7 @@ func TestShuffleRequestParams(t *testing.T) {
 	expected := params.Encode()
 
 	// Act
-	actual := shuffleRequestParams(params)
+	actual := shuffleRequestParams(&params)
 
 	// Assert
 	assert.NotEqual(t, expected, actual)

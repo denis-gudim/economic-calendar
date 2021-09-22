@@ -3,6 +3,7 @@ package client
 import (
 	"economic-calendar/loader/investing/data"
 	"economic-calendar/loader/investing/parsing"
+	"fmt"
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
@@ -24,6 +25,7 @@ type InvestingRepository struct {
 	DefaultLanguageId int
 	BatchSize         int
 	Source            InvestingHtmlSource
+	Logger            *log.Logger
 }
 
 func (repository *InvestingRepository) GetEventsSchedule(dateFrom, dateTo time.Time) (items []*data.InvestingScheduleRow, err error) {
@@ -110,7 +112,7 @@ func (repository *InvestingRepository) getEventsScheduleByLanguage(languageId in
 }
 
 func (repository *InvestingRepository) getEventDetailsByLanguage(languageId, eventId int) (event []InvestingDataEntry, err error) {
-	html, err := repository.Source.LoadEventDetailsHtml(languageId, eventId)
+	html, err := repository.Source.LoadEventDetailsHtml(eventId, languageId)
 
 	if err != nil {
 		return
@@ -165,31 +167,39 @@ func (repository *InvestingRepository) getItemsByLanguage(itemsGetter func(langu
 		return
 	}
 
-	defaultLanguageItemsCount := len(items)
+	defLangItemsCount := len(items)
 
-	if defaultLanguageItemsCount <= 0 {
+	if defLangItemsCount <= 0 {
 		return
 	}
 
-	defaultLanguageItemsMap := make(map[int]InvestingDataEntry, defaultLanguageItemsCount)
+	defaultLanguageItemsMap := make(map[int]InvestingDataEntry, defLangItemsCount)
 
 	for _, item := range items {
 		defaultLanguageItemsMap[item.GetId()] = item
 	}
 
-	itemsComparer := func(items []InvestingDataEntry) bool {
+	_itemsGetter := func(lang *data.InvestingLanguage) ([]InvestingDataEntry, error) {
 
-		if defaultLanguageItemsCount != len(items) {
-			return false
+		langItems, e := itemsGetter(lang.Id)
+
+		if e != nil {
+			return nil, e
+		}
+
+		langItemsCount := len(langItems)
+
+		if defLangItemsCount != langItemsCount {
+			return nil, fmt.Errorf("items count not equals to default lang items %d/%d", langItemsCount, defLangItemsCount)
 		}
 
 		for _, item := range items {
 			if _, ok := defaultLanguageItemsMap[item.GetId()]; !ok {
-				return false
+				return nil, fmt.Errorf("items have different keys with default items")
 			}
 		}
 
-		return true
+		return langItems, nil
 	}
 
 	batchSize := 1
@@ -210,17 +220,15 @@ func (repository *InvestingRepository) getItemsByLanguage(itemsGetter func(langu
 
 		poolChannel <- struct{}{}
 
-		go func(lang data.InvestingLanguage) {
+		go func(lang *data.InvestingLanguage) {
 
-			languageItems, e := itemsGetter(lang.Id)
+			langItems, e := _itemsGetter(lang)
 
 			if e != nil {
-				log.Errorf("items loading for language '%s' failed. %s", lang.Code, e.Error())
-			} else if !itemsComparer(languageItems) {
-				log.Errorf("items loading for language '%s' failed. language items are different", lang.Code)
+				repository.Logger.Errorf("items loading for language '%s' failed. %s", lang.Code, e.Error())
 			}
 
-			itemsChannel <- languageItems
+			itemsChannel <- langItems
 			<-poolChannel
 		}(language)
 

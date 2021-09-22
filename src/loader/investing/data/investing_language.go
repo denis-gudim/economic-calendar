@@ -6,7 +6,7 @@ type InvestingLanguage struct {
 	Domain string
 }
 
-var InvestingLanguagesMap = map[int]InvestingLanguage{
+var InvestingLanguagesMap = map[int]*InvestingLanguage{
 	1:  {1, "en", "www"},
 	2:  {2, "he", "il"},
 	3:  {3, "ar", "sa"},
@@ -27,7 +27,7 @@ var InvestingLanguagesMap = map[int]InvestingLanguage{
 	18: {18, "ko", "kr"},
 	52: {52, "vi", "vn"},
 	53: {53, "th", "th"},
-	54: {54, "id", "id"},
+	//54: {54, "id", "id"},
 	55: {55, "zh-hant", "hk"},
 	58: {58, "ms", "ms"},
 	73: {73, "hi", "hi"},

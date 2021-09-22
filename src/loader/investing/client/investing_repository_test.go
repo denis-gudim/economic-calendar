@@ -2,11 +2,14 @@ package client
 
 import (
 	"economic-calendar/loader/investing/data"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
+	"github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -16,6 +19,11 @@ type InvestingHtmlSourceMock struct {
 }
 
 func (mock *InvestingHtmlSourceMock) LoadEventsScheduleHtml(from, to time.Time, languageId int) (*goquery.Document, error) {
+
+	if languageId == 2 {
+		return nil, fmt.Errorf("test error")
+	}
+
 	html := `<table>
 				<tr id="eventRowId_372">
 					<td class="first left">All Day</td>
@@ -48,6 +56,11 @@ func (mock *InvestingHtmlSourceMock) LoadEventsScheduleHtml(from, to time.Time, 
 }
 
 func (mocke *InvestingHtmlSourceMock) LoadEventDetailsHtml(eventId, languageId int) (*goquery.Document, error) {
+
+	if languageId == 2 {
+		return nil, fmt.Errorf("test error")
+	}
+
 	html := `
 	<section id="leftColumn">
 		<h1 class="ecTitle float_lang_base_1 relativeAttr">U.K. Core Retail Sales MoM	</h1>
@@ -74,6 +87,11 @@ func (mocke *InvestingHtmlSourceMock) LoadEventDetailsHtml(eventId, languageId i
 }
 
 func (mock *InvestingHtmlSourceMock) LoadCountriesHtml(languageId int) (*goquery.Document, error) {
+
+	if languageId == 2 {
+		return nil, fmt.Errorf("test error")
+	}
+
 	html := `
 		<div id="filtersWrapper">
 			<ul class="countryOption">
@@ -105,11 +123,13 @@ func Test_InvestingRepository_getEventsScheduleByLanguage(t *testing.T) {
 
 func Test_InvestingRepository_GetEventsSchedule(t *testing.T) {
 	// Arrange
+	logger, hook := test.NewNullLogger()
 	source := &InvestingHtmlSourceMock{}
 	parser := &InvestingRepository{
 		Source:            source,
 		DefaultLanguageId: 1,
 		BatchSize:         3,
+		Logger:            logger,
 	}
 	time := time.Now()
 
@@ -119,7 +139,11 @@ func Test_InvestingRepository_GetEventsSchedule(t *testing.T) {
 	// Assert
 	source.AssertExpectations(t)
 	assert.Nil(t, err)
-	assert.Equal(t, 2*len(data.InvestingLanguagesMap), len(actualResult))
+	assert.Equal(t, 2*(len(data.InvestingLanguagesMap)-1), len(actualResult))
+
+	assert.Equal(t, 1, len(hook.Entries))
+	assert.Equal(t, logrus.ErrorLevel, hook.LastEntry().Level)
+	assert.Contains(t, hook.LastEntry().Message, "test error")
 }
 
 func Test_InvestingRepository_getEventDetailsByLanguage(t *testing.T) {
@@ -141,10 +165,12 @@ func Test_InvestingRepository_getEventDetailsByLanguage(t *testing.T) {
 
 func Test_InvestingRepository_GetEventDetails(t *testing.T) {
 	// Arrange
+	logger, hook := test.NewNullLogger()
 	source := &InvestingHtmlSourceMock{}
 	parser := &InvestingRepository{
 		Source:            source,
 		DefaultLanguageId: 1,
+		Logger:            logger,
 	}
 	eventId := 123
 
@@ -154,7 +180,11 @@ func Test_InvestingRepository_GetEventDetails(t *testing.T) {
 	// Assert
 	source.AssertExpectations(t)
 	assert.Nil(t, err)
-	assert.Equal(t, len(data.InvestingLanguagesMap), len(actualResult))
+	assert.Equal(t, len(data.InvestingLanguagesMap)-1, len(actualResult))
+
+	assert.Equal(t, 1, len(hook.Entries))
+	assert.Equal(t, logrus.ErrorLevel, hook.LastEntry().Level)
+	assert.Contains(t, hook.LastEntry().Message, "test error")
 }
 
 func Test_InvestingRepository_getCountriesByLanguage(t *testing.T) {
@@ -176,11 +206,13 @@ func Test_InvestingRepository_getCountriesByLanguage(t *testing.T) {
 
 func Test_InvestingRepository_GetCountries(t *testing.T) {
 	// Arrange
+	logger, hook := test.NewNullLogger()
 	source := &InvestingHtmlSourceMock{}
 	parser := &InvestingRepository{
 		Source:            source,
 		DefaultLanguageId: 1,
 		BatchSize:         4,
+		Logger:            logger,
 	}
 
 	// Act
@@ -189,5 +221,9 @@ func Test_InvestingRepository_GetCountries(t *testing.T) {
 	// Assert
 	source.AssertExpectations(t)
 	assert.Nil(t, err)
-	assert.Equal(t, 2*len(data.InvestingLanguagesMap), len(actualResult))
+	assert.Equal(t, 2*(len(data.InvestingLanguagesMap)-1), len(actualResult))
+
+	assert.Equal(t, 1, len(hook.Entries))
+	assert.Equal(t, logrus.ErrorLevel, hook.LastEntry().Level)
+	assert.Contains(t, hook.LastEntry().Message, "test error")
 }

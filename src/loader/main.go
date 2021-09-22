@@ -22,14 +22,14 @@ func main() {
 		},
 		BatchSize:         4,
 		DefaultLanguageId: 1,
+		Logger:            log.New(),
 	}
 
-	//clt := &client.InvestingHttpClient{RetryCount: 10}
-
-	//resp, err := clt.LoadEventDetailsHtml(1234, 1)
-	//resp, err := clt.LoadCountriesHtml(1)
 	//t := time.Date(2021, 9, 17, 0, 0, 0, 0, time.UTC)
 	//items, err := repository.GetEventsSchedule(t, t)
+
+	//items, err := repository.GetEventDetails(1042)
+
 	items, err := repository.GetCountries()
 
 	if err == nil {

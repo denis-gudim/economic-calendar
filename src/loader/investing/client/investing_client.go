@@ -34,8 +34,10 @@ func (client *InvestingHttpClient) LoadEventsScheduleHtml(from, to time.Time, la
 	requestUrl := fmt.Sprintf("%s/Service/getCalendarFilteredData", refererUrl)
 
 	headers := http.Header{
-		"Accept":  {"application/json, text/javascript, */*; q=0.01"},
-		"Referer": {refererUrl},
+		"Accept":           {"application/json, text/javascript, */*; q=0.01"},
+		"Content-Type":     {"application/x-www-form-urlencoded"},
+		"Referer":          {refererUrl},
+		"X-Requested-With": {"XMLHttpRequest"},
 	}
 
 	params := url.Values{
@@ -47,8 +49,8 @@ func (client *InvestingHttpClient) LoadEventsScheduleHtml(from, to time.Time, la
 		"currentTab":    {"custom"},
 		"submitFilters": {"1"},
 		"limit_from":    {"0"},
-		"dateFrom":      {from.Format("yyyy-MM-dd")},
-		"dateTo":        {to.Format("yyyy-MM-dd")},
+		"dateFrom":      {from.Format("2006-01-02")},
+		"dateTo":        {to.Format("2006-01-02")},
 		"uuid":          {uuid.New().String()},
 	}
 
@@ -106,22 +108,26 @@ func (client *InvestingHttpClient) doHtmlRequest(method, url string, headers *ht
 func (client *InvestingHttpClient) doRetryRequest(method, url string, headers *http.Header, body *url.Values) (reader *gzip.Reader, err error) {
 
 	for i := 0; i < client.RetryCount; i++ {
-		reader, err = doRequest(method, url, headers, body)
+		reader, err = client.doRequest(method, url, headers, body)
 
 		if err == nil {
-			return
+			break
+		}
+
+		if reader != nil {
+			reader.Close()
 		}
 	}
 
 	return
 }
 
-func doRequest(method, url string, headers *http.Header, body *url.Values) (reader *gzip.Reader, err error) {
+func (client *InvestingHttpClient) doRequest(method, url string, headers *http.Header, body *url.Values) (reader *gzip.Reader, err error) {
 
 	var bodyReader io.Reader
 
 	if body != nil {
-		bodyReader = strings.NewReader(shuffleRequestParams(*body))
+		bodyReader = strings.NewReader(shuffleRequestParams(body))
 	}
 
 	request, err := http.NewRequest(method, url, bodyReader)
@@ -138,7 +144,6 @@ func doRequest(method, url string, headers *http.Header, body *url.Values) (read
 
 	request.Header.Set("Accept-Encoding", "gzip")
 	request.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.129 Safari/537.36")
-	request.Header.Set("X-Requested-With", "XMLHttpRequest")
 
 	response, err := http.DefaultClient.Do(request)
 
@@ -156,7 +161,7 @@ func doRequest(method, url string, headers *http.Header, body *url.Values) (read
 	return gzip.NewReader(response.Body)
 }
 
-func shuffleRequestParams(body url.Values) string {
+func shuffleRequestParams(body *url.Values) string {
 	params := strings.Split(body.Encode(), "&")
 	perm := rand.Perm(len(params))
 
