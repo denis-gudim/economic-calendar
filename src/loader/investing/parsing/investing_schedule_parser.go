@@ -46,71 +46,71 @@ func (parser *InvestingScheduleParser) ParseScheduleHtml(s *goquery.Document) (i
 
 func (parser *InvestingScheduleParser) parseScheduleRowHtml(s *goquery.Selection) (row *data.InvestingScheduleRow, err error) {
 
-	row = &data.InvestingScheduleRow{}
+	result := data.InvestingScheduleRow{}
 
-	row.Id, err = parser.parseScheduleRowId(s)
-
-	if err != nil {
-		return
-	}
-
-	row.EventId, err = parseAttrValueToInt(s, "event_attr_id")
+	result.Id, err = parser.parseScheduleRowId(s)
 
 	if err != nil {
 		return
 	}
 
-	row.TimeStamp, err = parser.parseScheduleTimeStamp(s)
+	result.EventId, err = parseAttrValueToInt(s, "event_attr_id")
 
 	if err != nil {
 		return
 	}
 
-	row.Title, err = parser.parseScheduleTitle(s)
+	result.TimeStamp, err = parser.parseScheduleTimeStamp(s)
 
 	if err != nil {
 		return
 	}
 
-	row.CurrencyCode, err = parser.parseScheduleCurrencyCode(s)
+	result.Title, err = parser.parseScheduleTitle(s)
 
 	if err != nil {
 		return
 	}
 
-	row.Sentiment, err = parser.parseScheduleSentiment(s)
+	result.CurrencyCode, err = parser.parseScheduleCurrencyCode(s)
 
 	if err != nil {
 		return
 	}
 
-	row.CountryName, err = parser.parseScheduleCountryName(s)
+	result.Sentiment, err = parser.parseScheduleSentiment(s)
 
 	if err != nil {
 		return
 	}
 
-	row.Actual, err = parser.parseIndexValue(s, "act", "actual")
+	result.CountryName, err = parser.parseScheduleCountryName(s)
 
 	if err != nil {
 		return
 	}
 
-	row.Forecast, err = parser.parseIndexValue(s, "fore", "forecast")
+	result.Actual, err = parser.parseIndexValue(s, "act", "actual")
 
 	if err != nil {
 		return
 	}
 
-	row.Previous, err = parser.parseIndexValue(s, "prev", "previous")
+	result.Forecast, err = parser.parseIndexValue(s, "fore", "forecast")
 
 	if err != nil {
 		return
 	}
 
-	row.Type, err = parser.parseScheduleEventType(s)
+	result.Previous, err = parser.parseIndexValue(s, "prev", "previous")
 
-	return
+	if err != nil {
+		return
+	}
+
+	result.Type, err = parser.parseScheduleEventType(s)
+
+	return &result, err
 }
 
 func (parser *InvestingScheduleParser) parseScheduleRowId(s *goquery.Selection) (id int, err error) {

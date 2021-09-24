@@ -34,29 +34,29 @@ func (parser *InvestingCalendarEventParser) ParseCalendarEventHtml(html *goquery
 		}
 	}
 
-	event = &data.InvestingCalendarEvent{}
+	result := data.InvestingCalendarEvent{}
 
-	event.Title, err = parser.parseTitle(sectionTag)
-
-	if err != nil {
-		return
-	}
-
-	event.Overview, err = parser.parseOverview(sectionTag)
+	result.Title, err = parser.parseTitle(sectionTag)
 
 	if err != nil {
 		return
 	}
 
-	event.Source, event.SourceUrl, err = parser.parseSourceInfo(sectionTag)
+	result.Overview, err = parser.parseOverview(sectionTag)
 
 	if err != nil {
 		return
 	}
 
-	event.Unit, err = parser.parseUnit(sectionTag)
+	result.Source, result.SourceUrl, err = parser.parseSourceInfo(sectionTag)
 
-	return
+	if err != nil {
+		return
+	}
+
+	result.Unit, err = parser.parseUnit(sectionTag)
+
+	return &result, err
 }
 
 func (parser *InvestingCalendarEventParser) parseTitle(s *goquery.Selection) (title string, err error) {

@@ -63,7 +63,7 @@ func (client *InvestingHttpClient) LoadEventsScheduleHtml(from, to time.Time, la
 	data, ok := responseJson["data"]
 
 	if !ok {
-		err = fmt.Errorf("invalid response JSON. data property not found")
+		err = fmt.Errorf("investing client do request: invalid response JSON data property not found")
 		return
 	}
 
@@ -133,7 +133,7 @@ func (client *InvestingHttpClient) doRequest(method, url string, headers *http.H
 	request, err := http.NewRequest(method, url, bodyReader)
 
 	if err != nil {
-		return
+		return nil, fmt.Errorf("investing client create request: %w", err)
 	}
 
 	if headers != nil {
@@ -148,14 +148,17 @@ func (client *InvestingHttpClient) doRequest(method, url string, headers *http.H
 	response, err := http.DefaultClient.Do(request)
 
 	if err != nil {
-		return
+		return nil, fmt.Errorf("investing client do request error: %w", err)
 	}
 
-	responseEncoding := response.Header.Get("Content-Encoding")
+	if response.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("investing client do request: invalid response code '%v'", response.StatusCode)
+	}
 
-	if responseEncoding != "gzip" {
-		err = fmt.Errorf("invalid response encoding '%s'", responseEncoding)
-		return
+	encoding := response.Header.Get("Content-Encoding")
+
+	if encoding != "gzip" {
+		return nil, fmt.Errorf("investing client do request: invalid response encoding '%v'", encoding)
 	}
 
 	return gzip.NewReader(response.Body)

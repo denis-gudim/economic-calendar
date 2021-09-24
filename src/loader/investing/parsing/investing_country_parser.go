@@ -11,7 +11,7 @@ import (
 type InvestingCountryParser struct {
 }
 
-func (parser *InvestingCountryParser) parseCountryHtml(selection *goquery.Selection) (*data.InvestingCountry, error) {
+func (parser *InvestingCountryParser) parseCountryHtml(selection *goquery.Selection) (country *data.InvestingCountry, err error) {
 
 	idValueStr, exists := selection.Find("input").Attr("value")
 
@@ -21,21 +21,22 @@ func (parser *InvestingCountryParser) parseCountryHtml(selection *goquery.Select
 		}
 	}
 
-	id, err := strconv.Atoi(idValueStr)
+	result := data.InvestingCountry{}
+	result.Id, err = strconv.Atoi(idValueStr)
 
 	if err != nil {
 		return nil, &ParsingError{Err: err}
 	}
 
-	title := selection.Find("label").Text()
+	result.Title = selection.Find("label").Text()
 
-	if len(title) <= 0 {
+	if len(result.Title) <= 0 {
 		return nil, &ParsingError{
 			Err: errors.New("invalid html missed text or label tag"),
 		}
 	}
 
-	return &data.InvestingCountry{Id: id, Title: title, LanguageId: 0}, nil
+	return &result, nil
 }
 
 func (parser *InvestingCountryParser) ParseCountriesHtml(html *goquery.Document) (countries []*data.InvestingCountry, err error) {
