@@ -12,8 +12,9 @@ type Config struct {
 		ConnectionString string `yaml:"connectionString"`
 	}
 	Loading struct {
-		RetryCount int `yaml:"retryCount"`
-		BatchSize  int `yaml:"batchSize"`
+		DefaultLanguageId int `yaml:"defaultLanguageId"`
+		RetryCount        int `yaml:"retryCount"`
+		BatchSize         int `yaml:"batchSize"`
 	}
 }
 

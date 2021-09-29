@@ -21,7 +21,9 @@ func main() {
 	cnf := app.Config{}
 	cnf.Load()
 
-	dbTest(&cnf)
+	//	dbTest(&cnf)
+
+	invTest(&cnf)
 
 }
 
@@ -73,6 +75,10 @@ func invTest(cnf *app.Config) {
 	//items, err := repository.GetEventDetails(1042)
 
 	items, err := repository.GetCountries()
+
+	for _, c := range items[1] {
+		fmt.Printf("%v %v\n", c.Id, c.Title)
+	}
 
 	if err == nil {
 		fmt.Printf("OK nodes %v\n", len(items))

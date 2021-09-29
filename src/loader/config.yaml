@@ -2,5 +2,6 @@ db:
   connectionString: "user=root dbname=calendar sslmode=disable"
 
 loading:
-  retryCount: 10
   batchSize: 4
+  defaultLanguageId: 1
+  retryCount: 10

@@ -139,7 +139,9 @@ func Test_InvestingRepository_GetEventsSchedule(t *testing.T) {
 	// Assert
 	source.AssertExpectations(t)
 	assert.Nil(t, err)
-	assert.Equal(t, 2*(len(data.InvestingLanguagesMap)-1), len(actualResult))
+	assert.Equal(t, 2, len(actualResult))
+	assert.Equal(t, (len(data.InvestingLanguagesMap) - 1), len(actualResult[436019]))
+	assert.Equal(t, (len(data.InvestingLanguagesMap) - 1), len(actualResult[437026]))
 
 	assert.Equal(t, 1, len(hook.Entries))
 	assert.Equal(t, logrus.ErrorLevel, hook.LastEntry().Level)
@@ -221,7 +223,8 @@ func Test_InvestingRepository_GetCountries(t *testing.T) {
 	// Assert
 	source.AssertExpectations(t)
 	assert.Nil(t, err)
-	assert.Equal(t, 2*(len(data.InvestingLanguagesMap)-1), len(actualResult))
+	assert.Equal(t, len(data.InvestingLanguagesMap)-1, len(actualResult))
+	assert.Equal(t, 2, len(actualResult[1]))
 
 	assert.Equal(t, 1, len(hook.Entries))
 	assert.Equal(t, logrus.ErrorLevel, hook.LastEntry().Level)

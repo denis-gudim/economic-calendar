@@ -84,25 +84,28 @@ func (r *CountriesRepository) Save(country *Country) error {
 	}
 
 	_, err = tx.NamedExec(
-		`UPDATE countries 
-		 SET code=:code 
-		   , continent_code=:continent_code
-		   , currency=:currency
-		   , investing_id=:investing_id
-		   , name=:name
-		 WHERE code=:code`, country)
+		`INSERT INTO countries (code, continent_code, currency, investing_id, name)
+		 VALUES (:code, :continent_code, :currency, :investing_id, :name)
+		 ON CONFLICT (code) DO UPDATE 
+		 SET continent_code=:continent_code, currency=:currency, investing_id=:investing_id, name=:name`,
+		country)
 
 	if err != nil {
 		tx.Rollback() // TODO: Add rollback error handling
 		return fmt.Errorf("save country execute update error: %w", err)
 	}
 
+	_, err = tx.Exec(`DELETE FROM country_translations WHERE country_code=$1`, country.Code)
+
+	if err != nil {
+		tx.Rollback() // TODO: Add rollback error handling
+		return fmt.Errorf("save country delete translations error: %w", err)
+	}
+
 	for lang, title := range country.Translations {
 		_, err = tx.Exec(
 			`INSERT INTO country_translations (country_code, language_code, title)
-			 VALUES($1, $2, $3)
-			 ON CONFLICT (country_code, language_code) DO UPDATE
-			 SET country_code=$1, language_code=$2, title=$3`,
+			 VALUES($1, $2, $3);`,
 			country.Code, lang, title)
 
 		if err != nil {

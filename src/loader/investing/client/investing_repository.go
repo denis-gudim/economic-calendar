@@ -28,7 +28,7 @@ type InvestingRepository struct {
 	Logger            *log.Logger
 }
 
-func (repository *InvestingRepository) GetEventsSchedule(dateFrom, dateTo time.Time) (items []*data.InvestingScheduleRow, err error) {
+func (repository *InvestingRepository) GetEventsSchedule(dateFrom, dateTo time.Time) (itemsMap map[int][]*data.InvestingScheduleRow, err error) {
 
 	rows, err := repository.getItemsByLanguage(func(languageId int) ([]InvestingDataEntry, error) {
 		return repository.getEventsScheduleByLanguage(languageId, dateFrom, dateTo)
@@ -38,10 +38,19 @@ func (repository *InvestingRepository) GetEventsSchedule(dateFrom, dateTo time.T
 		return
 	}
 
-	items = make([]*data.InvestingScheduleRow, len(rows))
+	count := len(data.InvestingLanguagesMap)
+	itemsMap = make(map[int][]*data.InvestingScheduleRow, len(rows)/count)
 
-	for i, row := range rows {
-		items[i] = row.(*data.InvestingScheduleRow)
+	for _, row := range rows {
+
+		row := row.(*data.InvestingScheduleRow)
+		items, ok := itemsMap[row.Id]
+
+		if !ok {
+			items = make([]*data.InvestingScheduleRow, 0, count)
+		}
+
+		itemsMap[row.Id] = append(items, row)
 	}
 
 	return
@@ -66,7 +75,7 @@ func (repository *InvestingRepository) GetEventDetails(eventId int) (items []*da
 	return
 }
 
-func (repository *InvestingRepository) GetCountries() (items []*data.InvestingCountry, err error) {
+func (repository *InvestingRepository) GetCountries() (itemsMap map[int][]*data.InvestingCountry, err error) {
 
 	rows, err := repository.getItemsByLanguage(func(languageId int) ([]InvestingDataEntry, error) {
 		return repository.getCountriesByLanguage(languageId)
@@ -76,10 +85,19 @@ func (repository *InvestingRepository) GetCountries() (items []*data.InvestingCo
 		return
 	}
 
-	items = make([]*data.InvestingCountry, len(rows))
+	count := len(rows)/len(data.InvestingLanguagesMap) + 1
+	itemsMap = make(map[int][]*data.InvestingCountry, len(data.InvestingLanguagesMap))
 
-	for i, row := range rows {
-		items[i] = row.(*data.InvestingCountry)
+	for _, row := range rows {
+
+		row := row.(*data.InvestingCountry)
+		items, ok := itemsMap[row.LanguageId]
+
+		if !ok {
+			items = make([]*data.InvestingCountry, 0, count)
+		}
+
+		itemsMap[row.LanguageId] = append(items, row)
 	}
 
 	return
