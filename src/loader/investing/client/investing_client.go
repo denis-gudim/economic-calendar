@@ -2,6 +2,7 @@ package client
 
 import (
 	"compress/gzip"
+	"economic-calendar/loader/app"
 	"economic-calendar/loader/investing/data"
 	"encoding/json"
 	"fmt"
@@ -18,6 +19,12 @@ import (
 
 type InvestingHttpClient struct {
 	RetryCount int
+}
+
+func NewInvestingHttpClient(cnf app.Config) *InvestingHttpClient {
+	return &InvestingHttpClient{
+		RetryCount: cnf.Loading.RetryCount,
+	}
 }
 
 func (client *InvestingHttpClient) LoadEventDetailsHtml(eventId, languageId int) (*goquery.Document, error) {

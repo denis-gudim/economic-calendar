@@ -1,12 +1,18 @@
 package data
 
 import (
-	"economic-calendar/loader/investing/data"
+	"economic-calendar/loader/app"
 	"fmt"
 )
 
 type CountriesRepository struct {
 	baseRepository
+}
+
+func NewCountriesRepository(cnf app.Config) *CountriesRepository {
+	r := CountriesRepository{}
+	r.ConnectionString = cnf.DB.ConnectionString
+	return &r
 }
 
 func (r *CountriesRepository) GetAll() (countries []Country, err error) {
@@ -21,32 +27,32 @@ func (r *CountriesRepository) GetAll() (countries []Country, err error) {
 	countries = make([]Country, 0, 248)
 
 	rows, err := db.Queryx(
-		`SELECT c.*, ct.language_code, ct.title
+		`SELECT c.*, ct.language_id, ct.title
 		 FROM countries AS c LEFT JOIN country_translations AS ct
-		 ON c.code = ct.country_code
-		 ORDER BY c.code`)
+		 ON c.id = ct.country_id
+		 ORDER BY c.id`)
 
 	if err != nil {
 		return nil, fmt.Errorf("get all countries query error: %w", err)
 	}
 
 	var (
-		languageCode  *string
-		languageTitle *string
-		curr          Country
-		prevCode      string
-		trans         map[string]string
+		langId    *int
+		langTitle *string
+		curr      Country
+		prevCode  string
+		trans     Translations
 	)
 
 	for rows.Next() {
 		err = rows.Scan(
+			&curr.Id,
 			&curr.Code,
 			&curr.ContinentCode,
 			&curr.Name,
 			&curr.Currency,
-			&curr.InvestingId,
-			&languageCode,
-			&languageTitle,
+			&langId,
+			&langTitle,
 		)
 
 		if err != nil {
@@ -54,21 +60,21 @@ func (r *CountriesRepository) GetAll() (countries []Country, err error) {
 		}
 
 		if curr.Code != prevCode {
-			trans = make(map[string]string, len(data.InvestingLanguagesMap))
+			trans = Translations{}
 			curr.Translations = trans
 			countries = append(countries, curr)
 			prevCode = curr.Code
 		}
 
-		if languageCode != nil {
-			trans[*languageCode] = *languageTitle
+		if langId != nil {
+			trans[*langId] = *langTitle
 		}
 	}
 
 	return
 }
 
-func (r *CountriesRepository) Save(country *Country) error {
+func (r *CountriesRepository) Save(country Country) error {
 	db, err := r.createConnection()
 
 	if err != nil {
@@ -84,10 +90,10 @@ func (r *CountriesRepository) Save(country *Country) error {
 	}
 
 	_, err = tx.NamedExec(
-		`INSERT INTO countries (code, continent_code, currency, investing_id, name)
-		 VALUES (:code, :continent_code, :currency, :investing_id, :name)
-		 ON CONFLICT (code) DO UPDATE 
-		 SET continent_code=:continent_code, currency=:currency, investing_id=:investing_id, name=:name`,
+		`INSERT INTO countries (id, code, continent_code, currency, name)
+		 VALUES (:id, :code, :continent_code, :currency, :name)
+		 ON CONFLICT (id) DO UPDATE 
+		 SET code = :code, continent_code = :continent_code, currency = :currency, name = :name`,
 		country)
 
 	if err != nil {
@@ -95,18 +101,18 @@ func (r *CountriesRepository) Save(country *Country) error {
 		return fmt.Errorf("save country execute update error: %w", err)
 	}
 
-	_, err = tx.Exec(`DELETE FROM country_translations WHERE country_code=$1`, country.Code)
+	_, err = tx.Exec(`DELETE FROM country_translations WHERE country_id=$1`, country.Id)
 
 	if err != nil {
 		tx.Rollback() // TODO: Add rollback error handling
 		return fmt.Errorf("save country delete translations error: %w", err)
 	}
 
-	for lang, title := range country.Translations {
+	for langId, title := range country.Translations {
 		_, err = tx.Exec(
-			`INSERT INTO country_translations (country_code, language_code, title)
-			 VALUES($1, $2, $3);`,
-			country.Code, lang, title)
+			`INSERT INTO country_translations (country_id, language_id, title)
+			 VALUES($1, $2, $3)`,
+			country.Id, langId, title)
 
 		if err != nil {
 			tx.Rollback() //TODO: Add rollaback error handling

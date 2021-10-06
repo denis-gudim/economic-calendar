@@ -1,6 +1,7 @@
 package client
 
 import (
+	"economic-calendar/loader/app"
 	"economic-calendar/loader/investing/data"
 	"economic-calendar/loader/investing/parsing"
 	"fmt"
@@ -22,10 +23,19 @@ type InvestingHtmlSource interface {
 }
 
 type InvestingRepository struct {
-	DefaultLanguageId int
-	BatchSize         int
-	Source            InvestingHtmlSource
-	Logger            *log.Logger
+	defaultLanguageId int
+	batchSize         int
+	source            InvestingHtmlSource
+	logger            *log.Logger
+}
+
+func NewInvestingRepository(cnf app.Config, logger *log.Logger) *InvestingRepository {
+	return &InvestingRepository{
+		defaultLanguageId: cnf.Loading.DefaultLanguageId,
+		batchSize:         cnf.Loading.BatchSize,
+		source:            NewInvestingHttpClient(cnf),
+		logger:            logger,
+	}
 }
 
 func (repository *InvestingRepository) GetEventsSchedule(dateFrom, dateTo time.Time) (itemsMap map[int][]*data.InvestingScheduleRow, err error) {
@@ -91,21 +101,21 @@ func (repository *InvestingRepository) GetCountries() (itemsMap map[int][]*data.
 	for _, row := range rows {
 
 		row := row.(*data.InvestingCountry)
-		items, ok := itemsMap[row.LanguageId]
+		items, ok := itemsMap[row.Id]
 
 		if !ok {
 			items = make([]*data.InvestingCountry, 0, count)
 		}
 
-		itemsMap[row.LanguageId] = append(items, row)
+		itemsMap[row.Id] = append(items, row)
 	}
 
 	return
 }
 
-func (repository *InvestingRepository) getEventsScheduleByLanguage(languageId int, dateFrom, dateTo time.Time) (items []InvestingDataEntry, err error) {
+func (r *InvestingRepository) getEventsScheduleByLanguage(languageId int, dateFrom, dateTo time.Time) (items []InvestingDataEntry, err error) {
 
-	html, err := repository.Source.LoadEventsScheduleHtml(dateFrom, dateTo, languageId)
+	html, err := r.source.LoadEventsScheduleHtml(dateFrom, dateTo, languageId)
 
 	if err != nil {
 		return
@@ -129,8 +139,8 @@ func (repository *InvestingRepository) getEventsScheduleByLanguage(languageId in
 	return
 }
 
-func (repository *InvestingRepository) getEventDetailsByLanguage(languageId, eventId int) (event []InvestingDataEntry, err error) {
-	html, err := repository.Source.LoadEventDetailsHtml(eventId, languageId)
+func (r *InvestingRepository) getEventDetailsByLanguage(languageId, eventId int) (event []InvestingDataEntry, err error) {
+	html, err := r.source.LoadEventDetailsHtml(eventId, languageId)
 
 	if err != nil {
 		return
@@ -149,8 +159,8 @@ func (repository *InvestingRepository) getEventDetailsByLanguage(languageId, eve
 	return []InvestingDataEntry{_event}, nil
 }
 
-func (repository *InvestingRepository) getCountriesByLanguage(languageId int) (items []InvestingDataEntry, err error) {
-	html, err := repository.Source.LoadCountriesHtml(languageId)
+func (r *InvestingRepository) getCountriesByLanguage(languageId int) (items []InvestingDataEntry, err error) {
+	html, err := r.source.LoadCountriesHtml(languageId)
 
 	if err != nil {
 		return
@@ -174,11 +184,11 @@ func (repository *InvestingRepository) getCountriesByLanguage(languageId int) (i
 	return
 }
 
-func (repository *InvestingRepository) getItemsByLanguage(itemsGetter func(languageId int) ([]InvestingDataEntry, error)) (items []InvestingDataEntry, err error) {
-	items, err = itemsGetter(repository.DefaultLanguageId)
+func (r *InvestingRepository) getItemsByLanguage(itemsGetter func(languageId int) ([]InvestingDataEntry, error)) (items []InvestingDataEntry, err error) {
+	items, err = itemsGetter(r.defaultLanguageId)
 
 	if err != nil {
-		lang := data.InvestingLanguagesMap[repository.DefaultLanguageId]
+		lang := data.InvestingLanguagesMap[r.defaultLanguageId]
 
 		log.Errorf("items loading for language '%s' failed. %s", lang.Code, err.Error())
 
@@ -222,8 +232,8 @@ func (repository *InvestingRepository) getItemsByLanguage(itemsGetter func(langu
 
 	batchSize := 1
 
-	if repository.BatchSize > 0 {
-		batchSize = repository.BatchSize
+	if r.batchSize > 0 {
+		batchSize = r.batchSize
 	}
 
 	count := len(data.InvestingLanguagesMap) - 1
@@ -232,7 +242,7 @@ func (repository *InvestingRepository) getItemsByLanguage(itemsGetter func(langu
 
 	for languageId, language := range data.InvestingLanguagesMap {
 
-		if languageId == repository.DefaultLanguageId {
+		if languageId == r.defaultLanguageId {
 			continue
 		}
 
@@ -243,7 +253,7 @@ func (repository *InvestingRepository) getItemsByLanguage(itemsGetter func(langu
 			langItems, e := _itemsGetter(lang)
 
 			if e != nil {
-				repository.Logger.Errorf("items loading for language '%s' failed. %s", lang.Code, e.Error())
+				r.logger.Errorf("items loading for language '%s' failed. %s", lang.Code, e.Error())
 			}
 
 			itemsChannel <- langItems

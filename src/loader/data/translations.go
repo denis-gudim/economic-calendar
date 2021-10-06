@@ -1,3 +1,3 @@
 package data
 
-type Translations map[string]string
+type Translations map[int]string

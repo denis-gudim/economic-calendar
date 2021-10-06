@@ -1,10 +1,10 @@
 package data
 
 type Country struct {
+	Id            int
 	Code          string
 	ContinentCode string `db:"continent_code"`
 	Name          string
 	Currency      string
-	InvestingId   *int `db:"investing_id"`
 	Translations  Translations
 }
