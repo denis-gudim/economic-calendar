@@ -1,7 +1,6 @@
-package parsing
+package investing
 
 import (
-	"economic-calendar/loader/investing/data"
 	"strings"
 	"testing"
 
@@ -13,7 +12,7 @@ import (
 func Test_InvestingCalendarEventParser_ParseCalendarEventHtml(t *testing.T) {
 	tests := []struct {
 		html           string
-		expectedResult *data.InvestingCalendarEvent
+		expectedResult *InvestingCalendarEvent
 		err            error
 	}{
 		{
@@ -37,7 +36,7 @@ func Test_InvestingCalendarEventParser_ParseCalendarEventHtml(t *testing.T) {
 							</div>
 						</div>
 					</section>`,
-			expectedResult: &data.InvestingCalendarEvent{
+			expectedResult: &InvestingCalendarEvent{
 				Title:     "U.K. Core Retail Sales MoM",
 				Overview:  "The University of Michigan Consumer Sentiment Index.",
 				Source:    "University of Michigan",

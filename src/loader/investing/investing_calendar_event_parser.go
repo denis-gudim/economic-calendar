@@ -1,7 +1,6 @@
-package parsing
+package investing
 
 import (
-	"economic-calendar/loader/investing/data"
 	"errors"
 	"fmt"
 	"regexp"
@@ -19,7 +18,7 @@ func NewInvestingCalendarEventParser() *InvestingCalendarEventParser {
 	}
 }
 
-func (parser *InvestingCalendarEventParser) ParseCalendarEventHtml(html *goquery.Document) (event *data.InvestingCalendarEvent, err error) {
+func (parser *InvestingCalendarEventParser) ParseCalendarEventHtml(html *goquery.Document) (event *InvestingCalendarEvent, err error) {
 	if html == nil {
 		return nil, &ParsingError{
 			Err: fmt.Errorf("argument html value is nil"),
@@ -34,7 +33,7 @@ func (parser *InvestingCalendarEventParser) ParseCalendarEventHtml(html *goquery
 		}
 	}
 
-	result := data.InvestingCalendarEvent{}
+	result := InvestingCalendarEvent{}
 
 	result.Title, err = parser.parseTitle(sectionTag)
 

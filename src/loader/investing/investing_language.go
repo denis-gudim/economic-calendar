@@ -1,4 +1,4 @@
-package data
+package investing
 
 type InvestingLanguage struct {
 	Id     int

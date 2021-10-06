@@ -1,7 +1,6 @@
-package parsing
+package investing
 
 import (
-	"economic-calendar/loader/investing/data"
 	"fmt"
 	"strings"
 	"testing"
@@ -14,12 +13,12 @@ import (
 func Test_InvestingCountryParser_ParseCountryHtml(t *testing.T) {
 	tests := []struct {
 		html           string
-		expectedResult *data.InvestingCountry
+		expectedResult *InvestingCountry
 		err            error
 	}{
 		{
 			html: `<li><input value="123"><label>Text</label></li>`,
-			expectedResult: &data.InvestingCountry{
+			expectedResult: &InvestingCountry{
 				Id:         123,
 				Title:      "Text",
 				LanguageId: 0,
@@ -67,7 +66,7 @@ func Test_InvestingCountryParser_ParseCountriesHtml(t *testing.T) {
 
 	tests := []struct {
 		html           string
-		expectedResult []*data.InvestingCountry
+		expectedResult []*InvestingCountry
 		err            error
 	}{
 		{
@@ -75,7 +74,7 @@ func Test_InvestingCountryParser_ParseCountriesHtml(t *testing.T) {
 						<li><input value="1"><label>Text 1</label></li>
 						<li><input value="2"><label>Text 2</label></li>
 					</ul>`,
-			expectedResult: []*data.InvestingCountry{
+			expectedResult: []*InvestingCountry{
 				{Id: 1, Title: "Text 1", LanguageId: 0},
 				{Id: 2, Title: "Text 2", LanguageId: 0},
 			},

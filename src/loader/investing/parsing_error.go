@@ -1,4 +1,4 @@
-package parsing
+package investing
 
 type ParsingError struct {
 	Html string

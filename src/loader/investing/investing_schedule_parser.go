@@ -1,7 +1,6 @@
-package parsing
+package investing
 
 import (
-	"economic-calendar/loader/investing/data"
 	"fmt"
 	"regexp"
 	"strconv"
@@ -22,7 +21,7 @@ func NewInvestingScheduleParser() *InvestingScheduleParser {
 	}
 }
 
-func (parser *InvestingScheduleParser) ParseScheduleHtml(s *goquery.Document) (items []*data.InvestingScheduleRow, err error) {
+func (parser *InvestingScheduleParser) ParseScheduleHtml(s *goquery.Document) (items []*InvestingScheduleRow, err error) {
 
 	if s == nil {
 		return nil, &ParsingError{
@@ -32,7 +31,7 @@ func (parser *InvestingScheduleParser) ParseScheduleHtml(s *goquery.Document) (i
 
 	tableRows := s.Find("table tr[event_attr_id]")
 
-	items = make([]*data.InvestingScheduleRow, len(tableRows.Nodes))
+	items = make([]*InvestingScheduleRow, len(tableRows.Nodes))
 
 	tableRows.EachWithBreak(func(i int, s *goquery.Selection) bool {
 
@@ -44,9 +43,9 @@ func (parser *InvestingScheduleParser) ParseScheduleHtml(s *goquery.Document) (i
 	return
 }
 
-func (parser *InvestingScheduleParser) parseScheduleRowHtml(s *goquery.Selection) (row *data.InvestingScheduleRow, err error) {
+func (parser *InvestingScheduleParser) parseScheduleRowHtml(s *goquery.Selection) (row *InvestingScheduleRow, err error) {
 
-	result := data.InvestingScheduleRow{}
+	result := InvestingScheduleRow{}
 
 	result.Id, err = parser.parseScheduleRowId(s)
 
@@ -230,11 +229,11 @@ func (parser *InvestingScheduleParser) parseIndexValue(s *goquery.Selection, cla
 	return &number, err
 }
 
-func (parser *InvestingScheduleParser) parseScheduleEventType(s *goquery.Selection) (eventType data.ScheduleEventType, err error) {
+func (parser *InvestingScheduleParser) parseScheduleEventType(s *goquery.Selection) (eventType ScheduleEventType, err error) {
 	tag := s.Find("td.event span")
 
 	if len(tag.Nodes) <= 0 {
-		return data.Index, nil
+		return Index, nil
 	}
 
 	typeStr, err := getAttrValue(tag, "data-img_key")
@@ -245,16 +244,16 @@ func (parser *InvestingScheduleParser) parseScheduleEventType(s *goquery.Selecti
 
 	switch typeStr {
 	case "perliminary":
-		return data.PreliminaryRelease, nil
+		return PreliminaryRelease, nil
 	case "speach":
-		return data.Speech, nil
+		return Speech, nil
 	case "report":
-		return data.Report, nil
+		return Report, nil
 	case "sandClock":
-		return data.RetrievingData, nil
+		return RetrievingData, nil
 	}
 
-	return data.Index, &ParsingError{
+	return Index, &ParsingError{
 		Err: fmt.Errorf("invalid html. unknown event type %s", typeStr),
 	}
 }

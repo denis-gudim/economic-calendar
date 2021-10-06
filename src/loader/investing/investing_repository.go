@@ -1,9 +1,7 @@
-package client
+package investing
 
 import (
 	"economic-calendar/loader/app"
-	"economic-calendar/loader/investing/data"
-	"economic-calendar/loader/investing/parsing"
 	"fmt"
 	"time"
 
@@ -38,7 +36,7 @@ func NewInvestingRepository(cnf app.Config, logger *log.Logger) *InvestingReposi
 	}
 }
 
-func (repository *InvestingRepository) GetEventsSchedule(dateFrom, dateTo time.Time) (itemsMap map[int][]*data.InvestingScheduleRow, err error) {
+func (repository *InvestingRepository) GetEventsSchedule(dateFrom, dateTo time.Time) (itemsMap map[int][]*InvestingScheduleRow, err error) {
 
 	rows, err := repository.getItemsByLanguage(func(languageId int) ([]InvestingDataEntry, error) {
 		return repository.getEventsScheduleByLanguage(languageId, dateFrom, dateTo)
@@ -48,16 +46,16 @@ func (repository *InvestingRepository) GetEventsSchedule(dateFrom, dateTo time.T
 		return
 	}
 
-	count := len(data.InvestingLanguagesMap)
-	itemsMap = make(map[int][]*data.InvestingScheduleRow, len(rows)/count)
+	count := len(InvestingLanguagesMap)
+	itemsMap = make(map[int][]*InvestingScheduleRow, len(rows)/count)
 
 	for _, row := range rows {
 
-		row := row.(*data.InvestingScheduleRow)
+		row := row.(*InvestingScheduleRow)
 		items, ok := itemsMap[row.Id]
 
 		if !ok {
-			items = make([]*data.InvestingScheduleRow, 0, count)
+			items = make([]*InvestingScheduleRow, 0, count)
 		}
 
 		itemsMap[row.Id] = append(items, row)
@@ -66,7 +64,7 @@ func (repository *InvestingRepository) GetEventsSchedule(dateFrom, dateTo time.T
 	return
 }
 
-func (repository *InvestingRepository) GetEventDetails(eventId int) (items []*data.InvestingCalendarEvent, err error) {
+func (repository *InvestingRepository) GetEventDetails(eventId int) (items []*InvestingCalendarEvent, err error) {
 
 	rows, err := repository.getItemsByLanguage(func(languageId int) ([]InvestingDataEntry, error) {
 		return repository.getEventDetailsByLanguage(languageId, eventId)
@@ -76,16 +74,16 @@ func (repository *InvestingRepository) GetEventDetails(eventId int) (items []*da
 		return
 	}
 
-	items = make([]*data.InvestingCalendarEvent, len(rows))
+	items = make([]*InvestingCalendarEvent, len(rows))
 
 	for i, row := range rows {
-		items[i] = row.(*data.InvestingCalendarEvent)
+		items[i] = row.(*InvestingCalendarEvent)
 	}
 
 	return
 }
 
-func (repository *InvestingRepository) GetCountries() (itemsMap map[int][]*data.InvestingCountry, err error) {
+func (repository *InvestingRepository) GetCountries() (itemsMap map[int][]*InvestingCountry, err error) {
 
 	rows, err := repository.getItemsByLanguage(func(languageId int) ([]InvestingDataEntry, error) {
 		return repository.getCountriesByLanguage(languageId)
@@ -95,16 +93,16 @@ func (repository *InvestingRepository) GetCountries() (itemsMap map[int][]*data.
 		return
 	}
 
-	count := len(rows)/len(data.InvestingLanguagesMap) + 1
-	itemsMap = make(map[int][]*data.InvestingCountry, len(data.InvestingLanguagesMap))
+	count := len(rows)/len(InvestingLanguagesMap) + 1
+	itemsMap = make(map[int][]*InvestingCountry, len(InvestingLanguagesMap))
 
 	for _, row := range rows {
 
-		row := row.(*data.InvestingCountry)
+		row := row.(*InvestingCountry)
 		items, ok := itemsMap[row.Id]
 
 		if !ok {
-			items = make([]*data.InvestingCountry, 0, count)
+			items = make([]*InvestingCountry, 0, count)
 		}
 
 		itemsMap[row.Id] = append(items, row)
@@ -121,7 +119,7 @@ func (r *InvestingRepository) getEventsScheduleByLanguage(languageId int, dateFr
 		return
 	}
 
-	parser := parsing.NewInvestingScheduleParser()
+	parser := NewInvestingScheduleParser()
 
 	rows, err := parser.ParseScheduleHtml(html)
 
@@ -146,7 +144,7 @@ func (r *InvestingRepository) getEventDetailsByLanguage(languageId, eventId int)
 		return
 	}
 
-	parser := parsing.NewInvestingCalendarEventParser()
+	parser := NewInvestingCalendarEventParser()
 
 	_event, err := parser.ParseCalendarEventHtml(html)
 
@@ -166,7 +164,7 @@ func (r *InvestingRepository) getCountriesByLanguage(languageId int) (items []In
 		return
 	}
 
-	parser := &parsing.InvestingCountryParser{}
+	parser := &InvestingCountryParser{}
 
 	rows, err := parser.ParseCountriesHtml(html)
 
@@ -188,7 +186,7 @@ func (r *InvestingRepository) getItemsByLanguage(itemsGetter func(languageId int
 	items, err = itemsGetter(r.defaultLanguageId)
 
 	if err != nil {
-		lang := data.InvestingLanguagesMap[r.defaultLanguageId]
+		lang := InvestingLanguagesMap[r.defaultLanguageId]
 
 		log.Errorf("items loading for language '%s' failed. %s", lang.Code, err.Error())
 
@@ -207,7 +205,7 @@ func (r *InvestingRepository) getItemsByLanguage(itemsGetter func(languageId int
 		defaultLanguageItemsMap[item.GetId()] = item
 	}
 
-	_itemsGetter := func(lang *data.InvestingLanguage) ([]InvestingDataEntry, error) {
+	_itemsGetter := func(lang *InvestingLanguage) ([]InvestingDataEntry, error) {
 
 		langItems, e := itemsGetter(lang.Id)
 
@@ -236,11 +234,11 @@ func (r *InvestingRepository) getItemsByLanguage(itemsGetter func(languageId int
 		batchSize = r.batchSize
 	}
 
-	count := len(data.InvestingLanguagesMap) - 1
+	count := len(InvestingLanguagesMap) - 1
 	itemsChannel := make(chan []InvestingDataEntry, count)
 	poolChannel := make(chan struct{}, batchSize)
 
-	for languageId, language := range data.InvestingLanguagesMap {
+	for languageId, language := range InvestingLanguagesMap {
 
 		if languageId == r.defaultLanguageId {
 			continue
@@ -248,7 +246,7 @@ func (r *InvestingRepository) getItemsByLanguage(itemsGetter func(languageId int
 
 		poolChannel <- struct{}{}
 
-		go func(lang *data.InvestingLanguage) {
+		go func(lang *InvestingLanguage) {
 
 			langItems, e := _itemsGetter(lang)
 

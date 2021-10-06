@@ -1,9 +1,8 @@
-package client
+package investing
 
 import (
 	"compress/gzip"
 	"economic-calendar/loader/app"
-	"economic-calendar/loader/investing/data"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -28,7 +27,7 @@ func NewInvestingHttpClient(cnf app.Config) *InvestingHttpClient {
 }
 
 func (client *InvestingHttpClient) LoadEventDetailsHtml(eventId, languageId int) (*goquery.Document, error) {
-	language := data.InvestingLanguagesMap[languageId]
+	language := InvestingLanguagesMap[languageId]
 	url := fmt.Sprintf("https://%s.investing.com/economic-calendar/%x-%d", language.Domain, [16]byte(uuid.New()), eventId)
 
 	return client.doHtmlRequest("GET", url, nil, nil)
@@ -36,7 +35,7 @@ func (client *InvestingHttpClient) LoadEventDetailsHtml(eventId, languageId int)
 
 func (client *InvestingHttpClient) LoadEventsScheduleHtml(from, to time.Time, languageId int) (response *goquery.Document, err error) {
 
-	language := data.InvestingLanguagesMap[languageId]
+	language := InvestingLanguagesMap[languageId]
 	refererUrl := fmt.Sprintf("https://%s.investing.com/economic-calendar", language.Domain)
 	requestUrl := fmt.Sprintf("%s/Service/getCalendarFilteredData", refererUrl)
 
@@ -80,7 +79,7 @@ func (client *InvestingHttpClient) LoadEventsScheduleHtml(from, to time.Time, la
 }
 
 func (client *InvestingHttpClient) LoadCountriesHtml(languageId int) (*goquery.Document, error) {
-	language := data.InvestingLanguagesMap[languageId]
+	language := InvestingLanguagesMap[languageId]
 	url := fmt.Sprintf("https://%s.investing.com/economic-calendar/?_uid=%x", language.Domain, [16]byte(uuid.New()))
 
 	return client.doHtmlRequest("GET", url, nil, nil)

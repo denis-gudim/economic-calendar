@@ -1,4 +1,4 @@
-package data
+package investing
 
 type InvestingCalendarEvent struct {
 	Id         int

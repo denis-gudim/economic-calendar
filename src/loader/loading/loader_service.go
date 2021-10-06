@@ -3,8 +3,7 @@ package loading
 import (
 	"economic-calendar/loader/app"
 	"economic-calendar/loader/data"
-	investing_client "economic-calendar/loader/investing/client"
-	investing_data "economic-calendar/loader/investing/data"
+	"economic-calendar/loader/investing"
 	"fmt"
 	"time"
 
@@ -12,9 +11,9 @@ import (
 )
 
 type InvestingDataReciver interface {
-	GetEventsSchedule(dateFrom, dateTo time.Time) (map[int][]*investing_data.InvestingScheduleRow, error)
-	GetEventDetails(eventId int) ([]*investing_data.InvestingCalendarEvent, error)
-	GetCountries() (map[int][]*investing_data.InvestingCountry, error)
+	GetEventsSchedule(dateFrom, dateTo time.Time) (map[int][]*investing.InvestingScheduleRow, error)
+	GetEventDetails(eventId int) ([]*investing.InvestingCalendarEvent, error)
+	GetCountries() (map[int][]*investing.InvestingCountry, error)
 }
 
 type CountriesDataReciver interface {
@@ -32,7 +31,7 @@ type LoaderService struct {
 func NewLoaderService(cnf app.Config, logger *log.Logger) *LoaderService {
 
 	return &LoaderService{
-		investingRepository: investing_client.NewInvestingRepository(cnf, logger),
+		investingRepository: investing.NewInvestingRepository(cnf, logger),
 		countriesRepository: data.NewCountriesRepository(cnf),
 		logger:              logger,
 		config:              cnf,

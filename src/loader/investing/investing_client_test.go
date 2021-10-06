@@ -1,4 +1,4 @@
-package client
+package investing
 
 import (
 	"net/url"
