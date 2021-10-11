@@ -1,7 +1,9 @@
 package data
 
 type Language struct {
+	Id         int
 	Code       string
 	Name       string
-	NativeName string `db:"native_name"`
+	NativeName string
+	Domain     string
 }

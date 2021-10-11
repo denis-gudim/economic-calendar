@@ -2,7 +2,9 @@ package data
 
 import (
 	"economic-calendar/loader/app"
-	"fmt"
+
+	sq "github.com/Masterminds/squirrel"
+	"golang.org/x/xerrors"
 )
 
 type CountriesRepository struct {
@@ -16,31 +18,38 @@ func NewCountriesRepository(cnf app.Config) *CountriesRepository {
 }
 
 func (r *CountriesRepository) GetAll() (countries []Country, err error) {
+
+	fmtError := func(msg string, err error) error {
+		return xerrors.Errorf("get all countries failed: %s: %w", msg, err)
+	}
+
 	db, err := r.createConnection()
 
 	if err != nil {
-		return nil, fmt.Errorf("get all countries create db connection error: %w", err)
+		return nil, fmtError("create db connection", err)
 	}
 
 	defer db.Close()
 
-	countries = make([]Country, 0, 248)
+	countries = make([]Country, 0, 100)
 
-	rows, err := db.Queryx(
-		`SELECT c.*, ct.language_id, ct.title
-		 FROM countries AS c LEFT JOIN country_translations AS ct
-		 ON c.id = ct.country_id
-		 ORDER BY c.id`)
+	rows, err := r.initQueryBuilder().
+		Select("c.*, ct.language_id, ct.title").
+		From("countries c").
+		LeftJoin("country_translations ct ON c.id = ct.country_id").
+		OrderBy("c.id").
+		RunWith(db).
+		Query()
 
 	if err != nil {
-		return nil, fmt.Errorf("get all countries query error: %w", err)
+		return nil, fmtError("execute select query", err)
 	}
 
 	var (
 		langId    *int
 		langTitle *string
 		curr      Country
-		prevCode  string
+		prevId    int
 		trans     Translations
 	)
 
@@ -56,14 +65,14 @@ func (r *CountriesRepository) GetAll() (countries []Country, err error) {
 		)
 
 		if err != nil {
-			return nil, fmt.Errorf("get all countries scan row error: %w", err)
+			return nil, fmtError("scan row", err)
 		}
 
-		if curr.Code != prevCode {
+		if curr.Id != prevId {
 			trans = Translations{}
 			curr.Translations = trans
 			countries = append(countries, curr)
-			prevCode = curr.Code
+			prevId = curr.Id
 		}
 
 		if langId != nil {
@@ -74,56 +83,78 @@ func (r *CountriesRepository) GetAll() (countries []Country, err error) {
 	return
 }
 
-func (r *CountriesRepository) Save(country Country) error {
+func (r *CountriesRepository) Save(c Country) error {
+
+	fmtError := func(msg string, err error) error {
+		return xerrors.Errorf("save country failed: %s: %w", msg, err)
+	}
+
 	db, err := r.createConnection()
 
 	if err != nil {
-		return fmt.Errorf("save country create db connection error: %w", err)
+		return fmtError("create db connection", err)
 	}
 
 	defer db.Close()
 
-	tx, err := db.Beginx()
+	tx, err := db.Begin()
 
 	if err != nil {
-		return fmt.Errorf("save country create db transaction error: %w", err)
+		return fmtError("create db transaction", err)
 	}
 
-	_, err = tx.NamedExec(
-		`INSERT INTO countries (id, code, continent_code, currency, name)
-		 VALUES (:id, :code, :continent_code, :currency, :name)
-		 ON CONFLICT (id) DO UPDATE 
-		 SET code = :code, continent_code = :continent_code, currency = :currency, name = :name`,
-		country)
+	defer func() {
+		if tx != nil && err != nil {
+			tx.Rollback()
+		}
+	}()
+
+	upsertQuery := r.initQueryBuilder().
+		Insert("countries").
+		Columns("id", "code", "continent_code", "currency", "name").
+		Values(c.Id, c.Code, c.ContinentCode, c.Currency, c.Name).
+		Suffix("ON CONFLICT (id) DO").
+		SuffixExpr(
+			sq.Update(" ").
+				Set("code", c.Code).
+				Set("continent_code", c.ContinentCode).
+				Set("currency", c.Currency).
+				Set("name", c.Name))
+
+	_, err = upsertQuery.RunWith(tx).Exec()
 
 	if err != nil {
-		tx.Rollback() // TODO: Add rollback error handling
-		return fmt.Errorf("save country execute update error: %w", err)
+		return fmtError("execute upsert country query", err)
 	}
 
-	_, err = tx.Exec(`DELETE FROM country_translations WHERE country_id=$1`, country.Id)
+	deleteQuery := r.initQueryBuilder().
+		Delete("country_translations").
+		Where(sq.Eq{"country_id": c.Id})
+
+	_, err = deleteQuery.RunWith(tx).Exec()
 
 	if err != nil {
-		tx.Rollback() // TODO: Add rollback error handling
-		return fmt.Errorf("save country delete translations error: %w", err)
+		return fmtError("execute delete country translations query", err)
 	}
 
-	for langId, title := range country.Translations {
-		_, err = tx.Exec(
-			`INSERT INTO country_translations (country_id, language_id, title)
-			 VALUES($1, $2, $3)`,
-			country.Id, langId, title)
+	for langId, title := range c.Translations {
+
+		insertQuery := r.initQueryBuilder().
+			Insert("country_translations").
+			Columns("country_id", "language_id", "title").
+			Values(c.Id, langId, title)
+
+		_, err = insertQuery.RunWith(tx).Exec()
 
 		if err != nil {
-			tx.Rollback() //TODO: Add rollaback error handling
-			return fmt.Errorf("save country execute update translation error: %w", err)
+			return fmtError("execute insert country translation query", err)
 		}
 	}
 
 	err = tx.Commit()
 
 	if err != nil {
-		return fmt.Errorf("save country commit transaction error: %w", err)
+		return fmtError("commit transaction", err)
 	}
 
 	return nil

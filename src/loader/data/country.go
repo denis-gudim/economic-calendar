@@ -3,7 +3,7 @@ package data
 type Country struct {
 	Id            int
 	Code          string
-	ContinentCode string `db:"continent_code"`
+	ContinentCode string
 	Name          string
 	Currency      string
 	Translations  Translations

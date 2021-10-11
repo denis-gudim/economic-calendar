@@ -2,10 +2,10 @@ package data
 
 type Event struct {
 	Id           int
-	CountryCode  string
+	CountryId    int
 	ImpactLevel  int
 	Unit         string
 	Source       string
 	SourceUrl    string
-	Translations map[string]string
+	Translations Translations
 }

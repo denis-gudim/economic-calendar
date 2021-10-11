@@ -94,11 +94,9 @@ CREATE TABLE event_schedule
 	actual			DOUBLE PRECISION,
 	forecast		DOUBLE PRECISION,
 	previous		DOUBLE PRECISION,
-	revised_from	DOUBLE PRECISION,
 	done			BOOLEAN NOT NULL,
 	type			INTEGER NOT NULL,
 	event_id		INTEGER,
-	deleted			BOOLEAN DEFAULT false NOT NULL,
 	CONSTRAINT pk_event_schedule PRIMARY KEY (id),
 	CONSTRAINT fk_event_schedule_events FOREIGN KEY(event_id)
 		REFERENCES events ON DELETE CASCADE
