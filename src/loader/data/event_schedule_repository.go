@@ -23,8 +23,8 @@ func (r *EventScheduleRepository) GetFirst() (es *EventSchedule, err error) {
 		return xerrors.Errorf("get first events schedule: %s: %w", text, err)
 	}
 
-	filter := func(b sq.SelectBuilder) {
-		b.Limit(1)
+	filter := func(b sq.SelectBuilder) sq.SelectBuilder {
+		return b.Limit(1)
 	}
 
 	res, err := r.getWithFilter(filter, fmtError)
@@ -49,8 +49,8 @@ func (r *EventScheduleRepository) GetByDates(from, to time.Time) (events []Event
 		return xerrors.Errorf("get by dates ( from: %s, to: %s ) events schedule: %s: %w", fromVal, toVal, text, err)
 	}
 
-	filter := func(b sq.SelectBuilder) {
-		b.Where(sq.And{
+	filter := func(b sq.SelectBuilder) sq.SelectBuilder {
+		return b.Where(sq.And{
 			sq.GtOrEq{"timestamp_utc": fromVal},
 			sq.Lt{"timestamp_utc": toVal},
 		})
@@ -116,7 +116,7 @@ func (r *EventScheduleRepository) Save(es EventSchedule) error {
 		return fmtError("execute delete translations query", err)
 	}
 
-	for langId, title := range es.Translations {
+	for langId, title := range es.TitleTranslations {
 
 		insertQuery := r.initQueryBuilder().
 			Insert("event_schedule_translations").
@@ -139,7 +139,7 @@ func (r *EventScheduleRepository) Save(es EventSchedule) error {
 	return nil
 }
 
-func (r *EventScheduleRepository) getWithFilter(filter func(b sq.SelectBuilder), fmtError func(suf string, err error) error) (events []EventSchedule, err error) {
+func (r *EventScheduleRepository) getWithFilter(filter func(b sq.SelectBuilder) sq.SelectBuilder, fmtError func(suf string, err error) error) (events []EventSchedule, err error) {
 
 	db, err := r.createConnection()
 
@@ -152,13 +152,13 @@ func (r *EventScheduleRepository) getWithFilter(filter func(b sq.SelectBuilder),
 	events = make([]EventSchedule, 0, 256)
 
 	query := r.initQueryBuilder().
-		Select("es.*, et.language_id, et.title").
+		Select("es.*, est.language_id, est.title").
 		From("event_schedule es").
 		LeftJoin("event_schedule_translations est ON es.id = est.event_schedule_id").
 		OrderBy("es.id")
 
 	if filter != nil {
-		filter(query)
+		query = filter(query)
 	}
 
 	rows, err := query.RunWith(db).Query()
@@ -195,7 +195,7 @@ func (r *EventScheduleRepository) getWithFilter(filter func(b sq.SelectBuilder),
 
 		if curr.Id != prevId {
 			trans = Translations{}
-			curr.Translations = trans
+			curr.TitleTranslations = trans
 			events = append(events, curr)
 			prevId = curr.Id
 		}

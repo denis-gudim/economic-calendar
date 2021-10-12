@@ -17,13 +17,21 @@ func init() {
 func main() {
 
 	cnf := app.Config{}
-	cnf.Load()
 
-	l := loading.NewLoaderService(cnf, log.StandardLogger())
-
-	if err := l.LoadCountries(); err != nil {
+	if err := cnf.Load(); err != nil {
 		log.Fatal(err)
 		os.Exit(2)
 	}
+
+	ds := loading.NewDictionariesLoaderService(cnf, log.StandardLogger())
+
+	if err := ds.Load(); err != nil {
+		log.Fatal(err)
+		os.Exit(2)
+	}
+
+	hs := loading.NewHistoryLoaderService(cnf, log.StandardLogger())
+
+	hs.Load()
 
 }

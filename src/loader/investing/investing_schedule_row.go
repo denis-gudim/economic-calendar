@@ -29,10 +29,18 @@ type InvestingScheduleRow struct {
 	Type         ScheduleEventType
 }
 
-func (row *InvestingScheduleRow) GetId() int {
-	return row.Id
+func (r *InvestingScheduleRow) GetId() int {
+	return r.Id
 }
 
-func (row *InvestingScheduleRow) GetLanguageId() int {
-	return row.LanguageId
+func (r *InvestingScheduleRow) GetLanguageId() int {
+	return r.LanguageId
+}
+
+func (r *InvestingScheduleRow) IsDone(time time.Time) bool {
+	if r.Type == Index {
+		return r.Actual != nil
+	}
+
+	return time.After(r.TimeStamp)
 }

@@ -23,8 +23,8 @@ func (r *EventsRepository) GetById(id int) (*Event, error) {
 		return xerrors.Errorf("get events by id ( id: %d): %s: %w", id, msg, err)
 	}
 
-	filter := func(b sq.SelectBuilder) {
-		b.Where(sq.Eq{"id": id})
+	filter := func(b sq.SelectBuilder) sq.SelectBuilder {
+		return b.Where(sq.Eq{"id": id})
 	}
 
 	res, err := r.getWithFilter(filter, fmtError)
@@ -95,12 +95,14 @@ func (r *EventsRepository) Save(e Event) error {
 		return fmtError("execute delete event translations query", err)
 	}
 
-	for langId, title := range e.Translations {
+	for langId, title := range e.TitleTranslations {
+
+		overview := e.OverviewTranslations[langId]
 
 		insertQuery := r.initQueryBuilder().
 			Insert("event_translations").
-			Columns("event_id", "language_id", "title").
-			Values(e.Id, langId, title)
+			Columns("event_id", "language_id", "title", "overview").
+			Values(e.Id, langId, title, overview)
 
 		_, err = insertQuery.RunWith(tx).Exec()
 
@@ -118,7 +120,7 @@ func (r *EventsRepository) Save(e Event) error {
 	return nil
 }
 
-func (r *EventsRepository) getWithFilter(filter func(b sq.SelectBuilder), fmtError func(suf string, err error) error) (events []Event, err error) {
+func (r *EventsRepository) getWithFilter(filter func(b sq.SelectBuilder) sq.SelectBuilder, fmtError func(suf string, err error) error) (events []Event, err error) {
 
 	db, err := r.createConnection()
 
@@ -131,13 +133,13 @@ func (r *EventsRepository) getWithFilter(filter func(b sq.SelectBuilder), fmtErr
 	events = make([]Event, 0, 16)
 
 	query := r.initQueryBuilder().
-		Select("e.*, et.language_id, et.title").
+		Select("e.*, et.language_id, et.title, et.overview").
 		From("events e").
 		LeftJoin("event_translations et ON e.id = et.event_id").
 		OrderBy("e.id")
 
 	if filter != nil {
-		filter(query)
+		query = filter(query)
 	}
 
 	rows, err := query.RunWith(db).Query()
@@ -148,10 +150,12 @@ func (r *EventsRepository) getWithFilter(filter func(b sq.SelectBuilder), fmtErr
 
 	var (
 		langId    *int
-		langTitle *string
+		title     *string
+		overview  *string
 		curr      Event
 		prevId    int
-		trans     Translations
+		titles    Translations
+		overviews Translations
 	)
 
 	for rows.Next() {
@@ -163,7 +167,8 @@ func (r *EventsRepository) getWithFilter(filter func(b sq.SelectBuilder), fmtErr
 			&curr.Source,
 			&curr.SourceUrl,
 			&langId,
-			&langTitle,
+			&title,
+			&overview,
 		)
 
 		if err != nil {
@@ -171,14 +176,20 @@ func (r *EventsRepository) getWithFilter(filter func(b sq.SelectBuilder), fmtErr
 		}
 
 		if curr.Id != prevId {
-			trans = Translations{}
-			curr.Translations = trans
+			titles = Translations{}
+			overviews = Translations{}
+			curr.TitleTranslations = titles
+			curr.OverviewTranslations = overviews
 			events = append(events, curr)
 			prevId = curr.Id
 		}
 
-		if langId != nil {
-			trans[*langId] = *langTitle
+		if title != nil {
+			titles[*langId] = *title
+		}
+
+		if overview != nil {
+			overviews[*langId] = *overview
 		}
 	}
 

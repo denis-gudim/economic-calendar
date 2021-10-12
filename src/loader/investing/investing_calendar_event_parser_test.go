@@ -27,8 +27,18 @@ func Test_InvestingCalendarEventParser_ParseCalendarEventHtml(t *testing.T) {
 						<div id="overViewBox" class="overViewBox event">
 							<div class="left">The University of Michigan Consumer Sentiment Index.   </div>
 							<div class="right">
-								<div></div>
-								<div></div>
+								<div>
+									<span>
+										<i class="grayFullBullishIcon"></i>
+										<i class="grayFullBullishIcon"></i>
+										<i class="grayEmptyBullishIcon"></i>
+									</span>
+								</div>
+								<div>
+									<span>
+										<i title="Japan" class="ceFlags Japan middle inlineblock"></i>
+									</span>
+								</div>
 								<div>
 									<span>Source:</span>
 									<span><a href="http://thomsonreuters.com/en/products-services/financial/investment-management.html" target="_blank" title="University of Michigan">University of Michigan</a></span>
@@ -42,6 +52,8 @@ func Test_InvestingCalendarEventParser_ParseCalendarEventHtml(t *testing.T) {
 				Source:    "University of Michigan",
 				SourceUrl: "http://thomsonreuters.com/en/products-services/financial/investment-management.html",
 				Unit:      "%",
+				Sentiment: 2,
+				Country:   "Japan",
 			},
 			err: nil,
 		},
@@ -171,6 +183,102 @@ func Test_InvestingCalendarEventParser_ParseUnit(t *testing.T) {
 
 		// Act
 		actualResult, err := parser.parseUnit(selection)
+
+		// Assert
+		assert.IsType(t, test.err, err)
+		assert.Equal(t, test.expectedResult, actualResult)
+	}
+}
+
+func Test_InvestingCalendarEventParser_parseSentiment(t *testing.T) {
+	tests := []struct {
+		html           string
+		expectedResult int
+		err            error
+	}{
+		{
+			html: `<div id="overViewBox">
+						<div class="right">
+							<span>
+								<i class="grayFullBullishIcon"></i>
+								<i class="grayEmptyBullishIcon"></i>
+								<i class="grayEmptyBullishIcon"></i>
+							</span>
+						</div>
+					</div>`,
+			expectedResult: 1,
+			err:            nil,
+		},
+		{
+			html: `<div id="overViewBox">
+						<div class="right">
+							<span></span>
+						</div>
+					</div>`,
+			expectedResult: 0,
+			err:            &ParsingError{},
+		},
+		{
+			html: `<div id="overViewBox">
+						<div>
+						</div>
+					</div>`,
+			expectedResult: 0,
+			err:            &ParsingError{},
+		},
+	}
+
+	for _, test := range tests {
+		// Arrange
+		node, _ := html.Parse(strings.NewReader(test.html))
+		selection := goquery.NewDocumentFromNode(node).Find("#overViewBox")
+		parser := NewInvestingCalendarEventParser()
+
+		// Act
+		actualResult, err := parser.parseSentiment(selection)
+
+		// Assert
+		assert.IsType(t, test.err, err)
+		assert.Equal(t, test.expectedResult, actualResult)
+	}
+}
+
+func Test_InvestingCalendarEventParser_parseCountry(t *testing.T) {
+	tests := []struct {
+		html           string
+		expectedResult string
+		err            error
+	}{
+		{
+			html: `<div id="overViewBox">
+						<div class="right">
+							<span>
+								<i title="Japan" class="ceFlags Japan middle inlineblock"></i>
+							</span>
+						</div>
+					</div>`,
+			expectedResult: "Japan",
+			err:            nil,
+		},
+		{
+			html: `<div id="overViewBox">
+						<div class="right">
+							<span></span>
+						</div>
+					</div>`,
+			expectedResult: "",
+			err:            &ParsingError{},
+		},
+	}
+
+	for _, test := range tests {
+		// Arrange
+		node, _ := html.Parse(strings.NewReader(test.html))
+		selection := goquery.NewDocumentFromNode(node).Find("#overViewBox")
+		parser := NewInvestingCalendarEventParser()
+
+		// Act
+		actualResult, err := parser.parseCountry(selection)
 
 		// Assert
 		assert.IsType(t, test.err, err)

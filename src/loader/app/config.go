@@ -1,9 +1,10 @@
 package app
 
 import (
-	"fmt"
 	"os"
+	"time"
 
+	"golang.org/x/xerrors"
 	"gopkg.in/yaml.v3"
 )
 
@@ -12,22 +13,29 @@ type Config struct {
 		ConnectionString string `yaml:"connectionString"`
 	}
 	Loading struct {
-		DefaultLanguageId int `yaml:"defaultLanguageId"`
-		RetryCount        int `yaml:"retryCount"`
-		BatchSize         int `yaml:"batchSize"`
+		DefaultLanguageId int       `yaml:"defaultLanguageId"`
+		RetryCount        int       `yaml:"retryCount"`
+		BatchSize         int       `yaml:"batchSize"`
+		FromTime          time.Time `yaml:"fromTime"`
+		ToDays            int       `yaml:"toDays"`
 	}
 }
 
-func (cnf *Config) Load() {
-	cnf.loadYamlConfig()
-	cnf.loadEnvConfig()
+func (cnf *Config) Load() error {
+	err := cnf.loadYamlConfig()
+
+	if err != nil {
+		return err
+	}
+
+	return cnf.loadEnvConfig()
 }
 
-func (cnf *Config) loadYamlConfig() {
+func (cnf *Config) loadYamlConfig() error {
 	file, err := os.Open("config.yaml")
 
 	if err != nil {
-		cnf.processError(err)
+		return xerrors.Errorf("load yaml config failed: %w", err)
 	}
 
 	defer file.Close()
@@ -35,15 +43,12 @@ func (cnf *Config) loadYamlConfig() {
 	err = yaml.NewDecoder(file).Decode(cnf)
 
 	if err != nil {
-		cnf.processError(err)
+		return xerrors.Errorf("load yaml config failed: %w", err)
 	}
+
+	return nil
 }
 
-func (cnf *Config) loadEnvConfig() {
-
-}
-
-func (cnf *Config) processError(err error) {
-	fmt.Println(err)
-	os.Exit(2)
+func (cnf *Config) loadEnvConfig() error {
+	return nil
 }

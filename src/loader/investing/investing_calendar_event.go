@@ -7,6 +7,8 @@ type InvestingCalendarEvent struct {
 	Source     string
 	SourceUrl  string
 	Unit       string
+	Country    string
+	Sentiment  int
 	LanguageId int
 }
 

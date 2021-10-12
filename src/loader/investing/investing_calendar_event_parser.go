@@ -18,7 +18,7 @@ func NewInvestingCalendarEventParser() *InvestingCalendarEventParser {
 	}
 }
 
-func (parser *InvestingCalendarEventParser) ParseCalendarEventHtml(html *goquery.Document) (event *InvestingCalendarEvent, err error) {
+func (p *InvestingCalendarEventParser) ParseCalendarEventHtml(html *goquery.Document) (event *InvestingCalendarEvent, err error) {
 	if html == nil {
 		return nil, &ParsingError{
 			Err: fmt.Errorf("argument html value is nil"),
@@ -35,30 +35,42 @@ func (parser *InvestingCalendarEventParser) ParseCalendarEventHtml(html *goquery
 
 	result := InvestingCalendarEvent{}
 
-	result.Title, err = parser.parseTitle(sectionTag)
+	result.Title, err = p.parseTitle(sectionTag)
 
 	if err != nil {
 		return
 	}
 
-	result.Overview, err = parser.parseOverview(sectionTag)
+	result.Overview, err = p.parseOverview(sectionTag)
 
 	if err != nil {
 		return
 	}
 
-	result.Source, result.SourceUrl, err = parser.parseSourceInfo(sectionTag)
+	result.Source, result.SourceUrl, err = p.parseSourceInfo(sectionTag)
 
 	if err != nil {
 		return
 	}
 
-	result.Unit, err = parser.parseUnit(sectionTag)
+	result.Unit, err = p.parseUnit(sectionTag)
+
+	if err != nil {
+		return
+	}
+
+	result.Sentiment, err = p.parseSentiment(sectionTag)
+
+	if err != nil {
+		return
+	}
+
+	result.Country, err = p.parseCountry(sectionTag)
 
 	return &result, err
 }
 
-func (parser *InvestingCalendarEventParser) parseTitle(s *goquery.Selection) (title string, err error) {
+func (p *InvestingCalendarEventParser) parseTitle(s *goquery.Selection) (title string, err error) {
 	tag := s.Find("h1.ecTitle")
 
 	if len(tag.Nodes) <= 0 {
@@ -78,7 +90,7 @@ func (parser *InvestingCalendarEventParser) parseTitle(s *goquery.Selection) (ti
 	return
 }
 
-func (parser *InvestingCalendarEventParser) parseOverview(s *goquery.Selection) (overview string, err error) {
+func (p *InvestingCalendarEventParser) parseOverview(s *goquery.Selection) (overview string, err error) {
 	tag := s.Find("#overViewBox div.left")
 
 	if len(tag.Nodes) > 0 {
@@ -88,7 +100,7 @@ func (parser *InvestingCalendarEventParser) parseOverview(s *goquery.Selection) 
 	return
 }
 
-func (parser *InvestingCalendarEventParser) parseSourceInfo(s *goquery.Selection) (source string, sourceUrl string, err error) {
+func (p *InvestingCalendarEventParser) parseSourceInfo(s *goquery.Selection) (source string, sourceUrl string, err error) {
 	tag := s.Find("div.right div:last-child a")
 
 	if len(tag.Nodes) <= 0 {
@@ -106,7 +118,7 @@ func (parser *InvestingCalendarEventParser) parseSourceInfo(s *goquery.Selection
 	return
 }
 
-func (parser *InvestingCalendarEventParser) parseUnit(s *goquery.Selection) (unit string, err error) {
+func (p *InvestingCalendarEventParser) parseUnit(s *goquery.Selection) (unit string, err error) {
 
 	s.Find("#releaseInfo div.arial_14").EachWithBreak(func(i int, s *goquery.Selection) bool {
 
@@ -116,10 +128,38 @@ func (parser *InvestingCalendarEventParser) parseUnit(s *goquery.Selection) (uni
 			return false
 		}
 
-		unit = parser.unitRegEx.FindString(indexValue)
+		unit = p.unitRegEx.FindString(indexValue)
 
 		return len(unit) > 0
 	})
+
+	return
+}
+
+func (p *InvestingCalendarEventParser) parseSentiment(s *goquery.Selection) (sentiment int, err error) {
+	items := s.Find("i.grayFullBullishIcon")
+
+	sentiment = len(items.Nodes)
+
+	if sentiment <= 0 || sentiment > 3 {
+		return 0, &ParsingError{
+			Err: fmt.Errorf("invalid html. sentiment has invalid value %d", sentiment),
+		}
+	}
+
+	return sentiment, nil
+}
+
+func (p *InvestingCalendarEventParser) parseCountry(s *goquery.Selection) (country string, err error) {
+	tag := s.Find("i.ceFlags")
+
+	if len(tag.Nodes) <= 0 {
+		return "", &ParsingError{
+			Err: errors.New("invalid html country tag not found"),
+		}
+	}
+
+	country, err = getAttrValue(tag, "title")
 
 	return
 }

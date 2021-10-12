@@ -5,3 +5,5 @@ loading:
   batchSize: 4
   defaultLanguageId: 1
   retryCount: 10
+  fromTime: "2010-01-01T00:00:00Z"
+  toDays: 30

@@ -70,7 +70,7 @@ func (r *CountriesRepository) GetAll() (countries []Country, err error) {
 
 		if curr.Id != prevId {
 			trans = Translations{}
-			curr.Translations = trans
+			curr.NameTranslations = trans
 			countries = append(countries, curr)
 			prevId = curr.Id
 		}
@@ -137,7 +137,7 @@ func (r *CountriesRepository) Save(c Country) error {
 		return fmtError("execute delete country translations query", err)
 	}
 
-	for langId, title := range c.Translations {
+	for langId, title := range c.NameTranslations {
 
 		insertQuery := r.initQueryBuilder().
 			Insert("country_translations").
