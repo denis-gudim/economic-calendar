@@ -7,3 +7,10 @@ loading:
   retryCount: 10
   fromTime: "2010-01-01T00:00:00Z"
   toDays: 30
+
+logging:
+  level: "info"
+
+scheduler:
+  historyExpression: "0 0 * * *"
+  refreshExpression: "*/1 * * * *"

@@ -110,7 +110,7 @@ func Test_InvestingRepository_getEventsScheduleByLanguage(t *testing.T) {
 	languageId := 1
 
 	// Act
-	actualResult, err := parser.getEventsScheduleByLanguage(languageId, time, time)
+	actualResult, err := parser.GetEventsScheduleByLanguage(languageId, time, time)
 
 	// Assert
 	source.AssertExpectations(t)

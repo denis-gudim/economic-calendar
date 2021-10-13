@@ -18,13 +18,13 @@ func NewEventScheduleRepository(cnf app.Config) *EventScheduleRepository {
 	return &r
 }
 
-func (r *EventScheduleRepository) GetFirst() (es *EventSchedule, err error) {
+func (r *EventScheduleRepository) GetFirst(done bool) (es *EventSchedule, err error) {
 	fmtError := func(text string, err error) error {
 		return xerrors.Errorf("get first events schedule: %s: %w", text, err)
 	}
 
 	filter := func(b sq.SelectBuilder) sq.SelectBuilder {
-		return b.Limit(1)
+		return b.Where(sq.Eq{"done": done}).Limit(1)
 	}
 
 	res, err := r.getWithFilter(filter, fmtError)

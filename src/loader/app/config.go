@@ -4,6 +4,7 @@ import (
 	"os"
 	"time"
 
+	log "github.com/sirupsen/logrus"
 	"golang.org/x/xerrors"
 	"gopkg.in/yaml.v3"
 )
@@ -18,6 +19,13 @@ type Config struct {
 		BatchSize         int       `yaml:"batchSize"`
 		FromTime          time.Time `yaml:"fromTime"`
 		ToDays            int       `yaml:"toDays"`
+	}
+	Logging struct {
+		Level log.Level `yaml:"level"`
+	}
+	Scheduler struct {
+		HistoryExpression string `yaml:"historyExpression"`
+		RefreshExpression string `yaml:"refreshExpression"`
 	}
 }
 

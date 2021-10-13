@@ -38,8 +38,8 @@ func (r *InvestingScheduleRow) GetLanguageId() int {
 }
 
 func (r *InvestingScheduleRow) IsDone(time time.Time) bool {
-	if r.Type == Index {
-		return r.Actual != nil
+	if r.Type == Index && r.Actual != nil {
+		return true
 	}
 
 	return time.After(r.TimeStamp)

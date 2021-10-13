@@ -6,7 +6,7 @@ import (
 )
 
 type EventScheduleDataReciver interface {
-	GetFirst() (*data.EventSchedule, error)
+	GetFirst(done bool) (*data.EventSchedule, error)
 	GetByDates(from, to time.Time) ([]data.EventSchedule, error)
 	Save(es data.EventSchedule) error
 }

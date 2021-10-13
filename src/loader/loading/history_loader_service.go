@@ -11,6 +11,8 @@ import (
 	"golang.org/x/xerrors"
 )
 
+const daySec = 24 * 60 * 60
+
 type HistoryLoaderService struct {
 	investingRepository     InvestingDataReciver
 	countriesRepository     CountriesDataReciver
@@ -47,10 +49,10 @@ func (s *HistoryLoaderService) Load() {
 		s.logger.Error(fmtError("fill countries map", err))
 	}
 
-	startDate, err := s.getHistoryLoadingStartDate()
+	from, to, err := s.getHistoryLoadingDates()
 
 	if err != nil {
-		s.logger.Error(fmtError("start loading date calculation", err))
+		s.logger.Error(fmtError("loading dates calculation", err))
 		return
 	}
 
@@ -58,7 +60,7 @@ func (s *HistoryLoaderService) Load() {
 
 	defer cancelFunc()
 
-	out1, errc1 := s.loadInvestingSchedule(ctx, startDate)
+	out1, errc1 := s.loadInvestingSchedule(ctx, from, to)
 	out2, errc2 := s.loadInvestingEvents(ctx, out1)
 
 	for item := range out2 {
@@ -74,12 +76,16 @@ func (s *HistoryLoaderService) Load() {
 
 	select {
 	case err := <-errc1:
-		s.logger.Error(fmtError("load investing schedule", err))
+		if err != nil {
+			s.logger.Error(fmtError("load investing schedule", err))
+		}
 	case err := <-errc2:
-		s.logger.Error(fmtError("load investing events", err))
-	default:
-		s.logger.Info("events history loading finished")
+		if err != nil {
+			s.logger.Error(fmtError("load investing events", err))
+		}
 	}
+
+	s.logger.Info("events history loading finished")
 }
 
 func (s *HistoryLoaderService) fillCountriesMap() error {
@@ -100,21 +106,32 @@ func (s *HistoryLoaderService) fillCountriesMap() error {
 	return nil
 }
 
-func (s *HistoryLoaderService) getHistoryLoadingStartDate() (t time.Time, err error) {
-	frow, err := s.eventScheduleRepository.GetFirst()
+func (s *HistoryLoaderService) getHistoryLoadingDates() (from, to time.Time, err error) {
+
+	fromRow, err := s.eventScheduleRepository.GetFirst(true)
 
 	if err != nil {
 		return
 	}
 
-	if frow == nil {
-		return time.Now().AddDate(0, 0, s.config.Loading.ToDays), nil
+	toRow, err := s.eventScheduleRepository.GetFirst(false)
+
+	if err != nil {
+		return
 	}
 
-	return frow.TimeStamp, nil
+	if fromRow != nil {
+		from = time.Unix(fromRow.TimeStamp.Unix()/daySec*daySec, 0)
+	}
+
+	if toRow != nil {
+		to = time.Unix(toRow.TimeStamp.Unix()/daySec*daySec, 0)
+	}
+
+	return from, to, nil
 }
 
-func (s *HistoryLoaderService) loadInvestingSchedule(ctx context.Context, date time.Time) (<-chan data.EventSchedule, <-chan error) {
+func (s *HistoryLoaderService) loadInvestingSchedule(ctx context.Context, from, to time.Time) (<-chan data.EventSchedule, <-chan error) {
 
 	out := make(chan data.EventSchedule, 1024)
 	errc := make(chan error, 1)
@@ -123,46 +140,51 @@ func (s *HistoryLoaderService) loadInvestingSchedule(ctx context.Context, date t
 		defer close(out)
 		defer close(errc)
 
+		date := time.Unix((time.Now().UTC().Unix()/daySec+int64(s.config.Loading.ToDays))*daySec, 0)
+
 		for !date.Before(s.config.Loading.FromTime) {
 
-			batch, err := s.investingRepository.GetEventsSchedule(date, date)
+			if !date.After(from) || !date.Before(to) {
 
-			if err != nil {
-				errc <- err
-				break
-			}
+				batch, err := s.investingRepository.GetEventsSchedule(date, date)
 
-			s.logger.Infof("events schedule history batch loaded: date = %s, count = %d", date, len(batch))
-
-			for rowId, translations := range batch {
-
-				langItem := translations[0]
-
-				if len(translations) == 0 {
-					errc <- xerrors.Errorf("translations list is empty")
-					return
+				if err != nil {
+					errc <- err
+					break
 				}
 
-				newScheduleRow := data.EventSchedule{
-					Id:                rowId,
-					TimeStamp:         langItem.TimeStamp,
-					Actual:            langItem.Actual,
-					Forecast:          langItem.Forecast,
-					Previous:          langItem.Previous,
-					IsDone:            langItem.IsDone(time.Now()),
-					Type:              int(langItem.Type),
-					EventId:           langItem.EventId,
-					TitleTranslations: data.Translations{},
-				}
+				s.logger.Infof("events schedule history batch loaded: date = %s, count = %d", date, len(batch))
 
-				for _, langItem = range translations {
-					newScheduleRow.TitleTranslations[langItem.LanguageId] = langItem.Title
-				}
+				for rowId, translations := range batch {
 
-				select {
-				case out <- newScheduleRow:
-				case <-ctx.Done():
-					return
+					langItem := translations[0]
+
+					if len(translations) == 0 {
+						errc <- xerrors.Errorf("translations list is empty")
+						return
+					}
+
+					newScheduleRow := data.EventSchedule{
+						Id:                rowId,
+						TimeStamp:         langItem.TimeStamp,
+						Actual:            langItem.Actual,
+						Forecast:          langItem.Forecast,
+						Previous:          langItem.Previous,
+						IsDone:            langItem.IsDone(time.Now().UTC()),
+						Type:              int(langItem.Type),
+						EventId:           langItem.EventId,
+						TitleTranslations: data.Translations{},
+					}
+
+					for _, langItem = range translations {
+						newScheduleRow.TitleTranslations[langItem.LanguageId] = langItem.Title
+					}
+
+					select {
+					case out <- newScheduleRow:
+					case <-ctx.Done():
+						return
+					}
 				}
 			}
 

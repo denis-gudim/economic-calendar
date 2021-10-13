@@ -39,7 +39,20 @@ func NewInvestingRepository(cnf app.Config, logger *log.Logger) *InvestingReposi
 func (repository *InvestingRepository) GetEventsSchedule(dateFrom, dateTo time.Time) (itemsMap map[int][]*InvestingScheduleRow, err error) {
 
 	rows, err := repository.getItemsByLanguage(func(languageId int) ([]InvestingDataEntry, error) {
-		return repository.getEventsScheduleByLanguage(languageId, dateFrom, dateTo)
+		langItems, err := repository.GetEventsScheduleByLanguage(languageId, dateFrom, dateTo)
+
+		if err != nil {
+			return nil, err
+		}
+
+		items := make([]InvestingDataEntry, len(langItems))
+
+		for i, item := range langItems {
+			item.LanguageId = languageId
+			items[i] = item
+		}
+
+		return items, nil
 	})
 
 	if err != nil {
@@ -111,7 +124,7 @@ func (repository *InvestingRepository) GetCountries() (itemsMap map[int][]*Inves
 	return
 }
 
-func (r *InvestingRepository) getEventsScheduleByLanguage(languageId int, dateFrom, dateTo time.Time) (items []InvestingDataEntry, err error) {
+func (r *InvestingRepository) GetEventsScheduleByLanguage(languageId int, dateFrom, dateTo time.Time) (items []*InvestingScheduleRow, err error) {
 
 	html, err := r.source.LoadEventsScheduleHtml(dateFrom, dateTo, languageId)
 
@@ -119,22 +132,7 @@ func (r *InvestingRepository) getEventsScheduleByLanguage(languageId int, dateFr
 		return
 	}
 
-	parser := NewInvestingScheduleParser()
-
-	rows, err := parser.ParseScheduleHtml(html)
-
-	if err != nil {
-		return
-	}
-
-	items = make([]InvestingDataEntry, len(rows))
-
-	for i, row := range rows {
-		row.LanguageId = languageId
-		items[i] = row
-	}
-
-	return
+	return NewInvestingScheduleParser().ParseScheduleHtml(html)
 }
 
 func (r *InvestingRepository) getEventDetailsByLanguage(languageId, eventId int) (event []InvestingDataEntry, err error) {

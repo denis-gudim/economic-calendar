@@ -51,7 +51,7 @@ INSERT INTO countries (code, continent_code, currency, id, name) VALUES ('ZM', '
 INSERT INTO countries (code, continent_code, currency, id, name) VALUES ('ZW', 'AF', 'USD', 75, 'Zimbabwe');
 INSERT INTO countries (code, continent_code, currency, id, name) VALUES ('GB', 'EU', 'GBP', 4, 'United Kingdom');
 INSERT INTO countries (code, continent_code, currency, id, name) VALUES ('KR', 'AS', 'KRW', 11, 'South Korea');
-INSERT INTO countries (code, continent_code, currency, id, name) VALUES ('RU', 'EU', 'RUB', 56, 'Russia');
+INSERT INTO countries (code, continent_code, currency, id, name) VALUES ('RU', 'EU', 'RUB', 56, 'Russian Federation');
 INSERT INTO countries (code, continent_code, currency, id, name) VALUES ('SK', 'EU', 'EUR', 90, 'Slovakia');
 INSERT INTO countries (code, continent_code, currency, id, name) VALUES ('EU', 'EU', 'EUR', 72, 'Europe');
 INSERT INTO countries (code, continent_code, currency, id, name) VALUES ('VN', 'AS', 'VND', 178, 'Vietnam');
