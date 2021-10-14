@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"economic-calendar/loader/app"
 	"economic-calendar/loader/loading"
 	"fmt"
@@ -15,11 +16,13 @@ import (
 
 func main() {
 
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+
 	cnf := app.Config{}
 
 	if err := cnf.Load(); err != nil {
-		log.Fatal(err)
-		os.Exit(2)
+		processError(err)
 	}
 
 	logger := log.StandardLogger()
@@ -28,35 +31,46 @@ func main() {
 	ds := loading.NewDictionariesLoaderService(cnf, logger)
 
 	if err := ds.Load(); err != nil {
-		log.Fatal(err)
-		os.Exit(2)
+		processError(err)
 	}
-
-	sigs := make(chan os.Signal, 1)
-	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 
 	s := gocron.NewScheduler(time.UTC)
 
 	hs := loading.NewHistoryLoaderService(cnf, logger)
 
-	s.Cron(cnf.Scheduler.HistoryExpression).
+	_, err := s.Cron(cnf.Scheduler.HistoryExpression).
 		SingletonMode().
 		StartImmediately().
 		Do(hs.Load)
 
-	s.Cron(cnf.Scheduler.RefreshExpression).
+	if err != nil {
+		processError(err)
+	}
+
+	_, err = s.Cron(cnf.Scheduler.RefreshExpression).
 		SingletonMode().
 		Do(func() {
 			fmt.Printf("from refresh job\n")
 		})
 
+	if err != nil {
+		processError(err)
+	}
+
 	s.StartAsync()
 
 	logger.Info("scheduler started...")
 
-	<-sigs
+	<-ctx.Done()
+
+	stop()
 
 	s.Stop()
 
 	logger.Info("scheduler stoped")
+}
+
+func processError(err error) {
+	log.Fatal(err)
+	os.Exit(2)
 }
