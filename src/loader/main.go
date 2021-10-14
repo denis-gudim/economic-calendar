@@ -2,14 +2,14 @@ package main
 
 import (
 	"context"
-	"economic-calendar/loader/app"
-	"economic-calendar/loader/loading"
 	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
+	"github.com/denis-gudim/economic-calendar/loader/app"
+	"github.com/denis-gudim/economic-calendar/loader/loading"
 	"github.com/go-co-op/gocron"
 	log "github.com/sirupsen/logrus"
 )

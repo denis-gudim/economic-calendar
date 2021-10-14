@@ -1,6 +1,6 @@
 package loading
 
-import "economic-calendar/loader/data"
+import "github.com/denis-gudim/economic-calendar/loader/data"
 
 type EventsDataReciver interface {
 	GetById(id int) (*data.Event, error)

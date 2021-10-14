@@ -1,9 +1,10 @@
 package investing
 
 import (
-	"economic-calendar/loader/app"
 	"fmt"
 	"time"
+
+	"github.com/denis-gudim/economic-calendar/loader/app"
 
 	"github.com/PuerkitoBio/goquery"
 	log "github.com/sirupsen/logrus"

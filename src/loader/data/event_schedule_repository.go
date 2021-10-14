@@ -1,8 +1,9 @@
 package data
 
 import (
-	"economic-calendar/loader/app"
 	"time"
+
+	"github.com/denis-gudim/economic-calendar/loader/app"
 
 	sq "github.com/Masterminds/squirrel"
 	"golang.org/x/xerrors"

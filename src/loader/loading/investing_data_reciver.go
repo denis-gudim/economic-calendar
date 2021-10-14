@@ -1,8 +1,9 @@
 package loading
 
 import (
-	"economic-calendar/loader/investing"
 	"time"
+
+	"github.com/denis-gudim/economic-calendar/loader/investing"
 )
 
 type InvestingDataReciver interface {

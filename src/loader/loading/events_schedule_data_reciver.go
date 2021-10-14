@@ -1,8 +1,9 @@
 package loading
 
 import (
-	"economic-calendar/loader/data"
 	"time"
+
+	"github.com/denis-gudim/economic-calendar/loader/data"
 )
 
 type EventScheduleDataReciver interface {

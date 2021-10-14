@@ -1,9 +1,9 @@
 package loading
 
 import (
-	"economic-calendar/loader/app"
-	"economic-calendar/loader/data"
-	"economic-calendar/loader/investing"
+	"github.com/denis-gudim/economic-calendar/loader/app"
+	"github.com/denis-gudim/economic-calendar/loader/data"
+	"github.com/denis-gudim/economic-calendar/loader/investing"
 
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/xerrors"
