@@ -1,0 +1,5 @@
+db:
+  connectionString: "user=root dbname=calendar sslmode=disable"
+
+logging:
+  level: "info"
