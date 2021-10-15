@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"github.com/denis-gudim/economic-calendar/api/app"
-	v1_handlers "github.com/denis-gudim/economic-calendar/api/v1/handlers"
+	v1 "github.com/denis-gudim/economic-calendar/api/v1"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )
@@ -28,12 +28,9 @@ func main() {
 
 	router := gin.Default()
 
-	apiV1 := router.Group("/v1")
+	v1.InitRoutes(router, cnf, logger)
 
-	v1_handlers.InitCountriesHandler(apiV1, cnf, logger)
-	v1_handlers.InitScheduleHandler(apiV1, cnf, logger)
-
-	if err := router.Run(":8081"); err != nil {
+	if err := router.Run(":8080"); err != nil {
 		processError(err)
 	}
 }

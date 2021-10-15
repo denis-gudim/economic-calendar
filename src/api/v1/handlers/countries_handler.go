@@ -16,14 +16,11 @@ type CountriesHandler struct {
 	baseHandler
 }
 
-func InitCountriesHandler(rg *gin.RouterGroup, cnf app.Config, logger *zap.Logger) {
-
-	handler := CountriesHandler{
+func NewCountriesHandler(cnf app.Config, logger *zap.Logger) CountriesHandler {
+	return CountriesHandler{
 		repository: data.NewCountriesRepository(cnf),
 		logger:     logger,
 	}
-
-	rg.GET("countries", handler.Get)
 }
 
 func (h *CountriesHandler) Get(c *gin.Context) {

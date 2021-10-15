@@ -17,16 +17,11 @@ type EventsHandler struct {
 	baseHandler
 }
 
-func InitScheduleHandler(rg *gin.RouterGroup, cnf app.Config, logger *zap.Logger) {
-
-	handler := EventsHandler{
+func NewEventsHandler(cnf app.Config, logger *zap.Logger) EventsHandler {
+	return EventsHandler{
 		repository: data.NewEventsRepository(cnf),
 		logger:     logger,
 	}
-
-	rg.GET("events", handler.GetEventsSchdule)
-	rg.GET("events/:id", handler.GetEventDetails)
-	rg.GET("events/:id/history", handler.GetEventHistory)
 }
 
 func (h *EventsHandler) GetEventsSchdule(c *gin.Context) {
