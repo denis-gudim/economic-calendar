@@ -11,24 +11,25 @@ import (
 	"go.uber.org/zap"
 )
 
-type ScheduleHandler struct {
-	repository *data.ScheduleRepository
+type EventsHandler struct {
+	repository *data.EventsRepository
 	logger     *zap.Logger
 	baseHandler
 }
 
 func InitScheduleHandler(rg *gin.RouterGroup, cnf app.Config, logger *zap.Logger) {
 
-	handler := ScheduleHandler{
-		repository: data.NewScheduleRepository(cnf),
+	handler := EventsHandler{
+		repository: data.NewEventsRepository(cnf),
 		logger:     logger,
 	}
 
-	rg.GET("schedule", handler.Get)
-	rg.GET("schedule/:id", handler.GetEventById)
+	rg.GET("events", handler.GetEventsSchdule)
+	rg.GET("events/:id", handler.GetEventDetails)
+	rg.GET("events/:id/history", handler.GetEventHistory)
 }
 
-func (h *ScheduleHandler) Get(c *gin.Context) {
+func (h *EventsHandler) GetEventsSchdule(c *gin.Context) {
 
 	lang := c.DefaultQuery("lang", "en")
 	from := c.Query("from")
@@ -63,7 +64,7 @@ func (h *ScheduleHandler) Get(c *gin.Context) {
 	c.JSON(http.StatusOK, rows)
 }
 
-func (h *ScheduleHandler) GetEventById(c *gin.Context) {
+func (h *EventsHandler) GetEventDetails(c *gin.Context) {
 
 	lang := c.DefaultQuery("lang", "en")
 	id := c.Param("id")
@@ -81,6 +82,30 @@ func (h *ScheduleHandler) GetEventById(c *gin.Context) {
 		h.logger.Error(err.Error(),
 			zap.Int("eventId", eventId),
 			zap.String("lang", lang),
+		)
+		h.writeServerError(c)
+		return
+	}
+
+	c.JSON(http.StatusOK, rows)
+}
+
+func (h *EventsHandler) GetEventHistory(c *gin.Context) {
+
+	id := c.Param("id")
+
+	eventId, err := strconv.Atoi(id)
+
+	if err != nil {
+		h.writeBadRequest(c, "invalid event id value '%s'", id)
+		return
+	}
+
+	rows, err := h.repository.GetHistoryById(c, eventId)
+
+	if err != nil {
+		h.logger.Error(err.Error(),
+			zap.Int("eventId", eventId),
 		)
 		h.writeServerError(c)
 		return
