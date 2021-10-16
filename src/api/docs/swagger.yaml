@@ -1,0 +1,269 @@
+basePath: /v1/
+definitions:
+  data.Country:
+    properties:
+      code:
+        example: RU
+        type: string
+      continentCode:
+        example: EU
+        type: string
+      currency:
+        example: RUB
+        type: string
+      id:
+        example: 56
+        type: integer
+      name:
+        example: Russian Federation
+        type: string
+    type: object
+  data.Event:
+    properties:
+      actual:
+        type: number
+      code:
+        type: string
+      eventId:
+        type: integer
+      forecast:
+        type: number
+      id:
+        type: integer
+      impactLevel:
+        type: integer
+      previous:
+        type: number
+      timestamp:
+        type: string
+      title:
+        type: string
+      type:
+        type: integer
+      unit:
+        type: string
+    type: object
+  data.EventDetails:
+    properties:
+      actual:
+        type: number
+      code:
+        type: string
+      eventId:
+        type: integer
+      forecast:
+        type: number
+      id:
+        type: integer
+      impactLevel:
+        type: integer
+      overview:
+        type: string
+      previous:
+        type: number
+      source:
+        type: string
+      sourceUrl:
+        type: string
+      timestamp:
+        type: string
+      title:
+        type: string
+      type:
+        type: integer
+      unit:
+        type: string
+    type: object
+  data.EventRow:
+    properties:
+      actual:
+        type: number
+      eventId:
+        type: integer
+      forecast:
+        type: number
+      id:
+        type: integer
+      previous:
+        type: number
+      timestamp:
+        type: string
+    type: object
+  httputil.BadRequestError:
+    properties:
+      code:
+        example: 400
+        type: integer
+      message:
+        example: '400 Bad Request: error details text'
+        type: string
+    type: object
+  httputil.InternalServerError:
+    properties:
+      code:
+        example: 500
+        type: integer
+      message:
+        example: 500 Internal Server Error
+        type: string
+    type: object
+  httputil.NotFoundError:
+    properties:
+      code:
+        example: 404
+        type: integer
+      message:
+        example: '404 Not Found: error details text'
+        type: string
+    type: object
+info:
+  contact:
+    email: denis.gudim@gmail.com
+    name: API Support
+    url: https://github.com/denis-gudim/economic-calendar/issues
+  description: This is a sample economic calendar api
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  title: Economic Calendar Example API
+  version: "1.0"
+paths:
+  /countries:
+    get:
+      consumes:
+      - application/json
+      description: Returns list of countries translated to specified language.
+      parameters:
+      - default: en
+        description: language code value
+        in: query
+        name: lang
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/data.Country'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httputil.InternalServerError'
+      summary: Countries list by language code
+      tags:
+      - Countries
+  /events:
+    get:
+      consumes:
+      - application/json
+      description: Returns event schedule list in dates diapasone
+      parameters:
+      - description: from date string in ISO 8601 format e.g. 2021-10-10
+        in: query
+        name: from
+        required: true
+        type: string
+      - description: to date string in ISO 8601 format e.g. 2021-10-10
+        in: query
+        name: to
+        required: true
+        type: string
+      - default: en
+        description: language code value
+        in: query
+        name: lang
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/data.Event'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/httputil.BadRequestError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httputil.InternalServerError'
+      summary: Event schedule between dates
+      tags:
+      - Events
+  /events/{eventId}:
+    get:
+      consumes:
+      - application/json
+      description: Returns event details with last schedule information by specified
+        identifier
+      parameters:
+      - description: event identifier
+        in: path
+        name: eventId
+        required: true
+        type: integer
+      - default: en
+        description: language code value
+        in: query
+        name: lang
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/data.EventDetails'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/httputil.BadRequestError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/httputil.NotFoundError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httputil.InternalServerError'
+      summary: Event details by id
+      tags:
+      - Events
+  /events/{eventId}/history:
+    get:
+      consumes:
+      - application/json
+      description: Returns event history list by event id
+      parameters:
+      - description: event identifier
+        in: path
+        name: eventId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/data.EventRow'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/httputil.BadRequestError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httputil.InternalServerError'
+      summary: Event history by id
+      tags:
+      - Events
+swagger: "2.0"

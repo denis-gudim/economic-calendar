@@ -49,7 +49,7 @@ func (r *EventsRepository) GetScheduleByDates(ctx context.Context, from, to time
 	return rows, nil
 }
 
-func (r *EventsRepository) GetEventById(ctx context.Context, eventId int, langCode string) ([]EventDetails, error) {
+func (r *EventsRepository) GetEventById(ctx context.Context, eventId int, langCode string) (*EventDetails, error) {
 	const errFormat = "get event by id: %s: %w"
 
 	db, err := r.connectDB(ctx)
@@ -76,7 +76,11 @@ func (r *EventsRepository) GetEventById(ctx context.Context, eventId int, langCo
 		return nil, xerrors.Errorf(errFormat, "execute select query", err)
 	}
 
-	return rows, nil
+	if len(rows) == 0 {
+		return nil, nil
+	}
+
+	return &rows[0], nil
 }
 
 func (r *EventsRepository) GetHistoryById(ctx context.Context, eventId int) ([]EventRow, error) {
