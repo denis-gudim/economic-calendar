@@ -1,5 +1,3 @@
-DROP DATABASE IF EXISTS calendar;
-
 DROP ROLE IF EXISTS calendar_api_svc;
 DROP ROLE IF EXISTS calendar_ldr_svc;
 
@@ -23,11 +21,6 @@ CREATE ROLE calendar_api_svc WITH
 	CONNECTION LIMIT -1
 	PASSWORD 'Yeishee4';
 
-CREATE DATABASE calendar
-    WITH 
-    OWNER = calendar_ldr_svc
-    ENCODING = 'UTF8'
-    CONNECTION LIMIT = -1;
-
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO calendar_ldr_svc;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO calendar_ldr_svc;
 GRANT SELECT ON ALL TABLES IN SCHEMA public TO calendar_api_svc;
-ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO calendar_api_svc;

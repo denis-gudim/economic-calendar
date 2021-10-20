@@ -1,46 +1,26 @@
 package app
 
 import (
-	"os"
-
+	"github.com/spf13/viper"
 	"golang.org/x/xerrors"
-	"gopkg.in/yaml.v2"
 )
 
 type Config struct {
 	DB struct {
-		ConnectionString string `yaml:"connectionString"`
-	}
+		ConnectionString string `mapstructure:"DB_CONSTR"`
+	} `mapstructure:",squash"`
 }
 
 func (cnf *Config) Load() error {
-	err := cnf.loadYamlConfig()
 
-	if err != nil {
-		return err
+	viper.SetConfigType("env")
+	viper.AddConfigPath(".")
+
+	viper.AutomaticEnv()
+
+	if err := viper.ReadInConfig(); err != nil {
+		return xerrors.Errorf("Error reading config file: %w", err)
 	}
 
-	return cnf.loadEnvConfig()
-}
-
-func (cnf *Config) loadYamlConfig() error {
-	file, err := os.Open("config.yaml")
-
-	if err != nil {
-		return xerrors.Errorf("load yaml config failed: %w", err)
-	}
-
-	defer file.Close()
-
-	err = yaml.NewDecoder(file).Decode(cnf)
-
-	if err != nil {
-		return xerrors.Errorf("load yaml config failed: %w", err)
-	}
-
-	return nil
-}
-
-func (cnf *Config) loadEnvConfig() error {
-	return nil
+	return viper.Unmarshal(cnf)
 }

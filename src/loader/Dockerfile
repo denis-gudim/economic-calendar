@@ -1,9 +1,17 @@
-FROM golang:1.17-alpine3.14
+FROM golang:1.17-alpine3.14 AS build-ldr
 
-WORKDIR /go/src/calendar-loader
+WORKDIR /src/
+
 COPY . .
 
 RUN go get -d -v ./...
-RUN go install -v ./...
+RUN go build -o ./out/calendar-loader .
 
-CMD ["calendar-loader"]
+FROM golang:1.17-alpine3.14
+
+WORKDIR /opt/app/
+
+COPY --from=build-ldr /src/out/calendar-loader calendar-loader
+COPY --from=build-ldr /src/config.env config.env
+
+CMD ["/opt/app/calendar-loader"]
