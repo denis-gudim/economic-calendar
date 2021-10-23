@@ -1,9 +1,9 @@
-package v1
+package controllers
 
 import (
+	"context"
 	"net/http"
 
-	"github.com/denis-gudim/economic-calendar/api/app"
 	"github.com/denis-gudim/economic-calendar/api/httputil"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
@@ -11,15 +11,19 @@ import (
 	data "github.com/denis-gudim/economic-calendar/api/v1/data"
 )
 
+type CountriesDataReciver interface {
+	GetCountriesByLanguage(ctx context.Context, langCode string) ([]data.Country, error)
+}
+
 type CountriesController struct {
-	repository *data.CountriesRepository
+	repository CountriesDataReciver
 	logger     *zap.Logger
 }
 
-func NewCountriesController(cnf app.Config, logger *zap.Logger) CountriesController {
-	return CountriesController{
-		repository: data.NewCountriesRepository(cnf),
-		logger:     logger,
+func NewCountriesController(r CountriesDataReciver, l *zap.Logger) *CountriesController {
+	return &CountriesController{
+		repository: r,
+		logger:     l,
 	}
 }
 

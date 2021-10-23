@@ -19,7 +19,7 @@ func (cnf *Config) Load() error {
 	viper.AutomaticEnv()
 
 	if err := viper.ReadInConfig(); err != nil {
-		return xerrors.Errorf("Error reading config file: %w", err)
+		return xerrors.Errorf("error reading config file: %w", err)
 	}
 
 	return viper.Unmarshal(cnf)

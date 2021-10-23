@@ -1,12 +1,12 @@
-package v1
+package controllers
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"strconv"
 	"time"
 
-	"github.com/denis-gudim/economic-calendar/api/app"
 	"github.com/denis-gudim/economic-calendar/api/httputil"
 	"github.com/denis-gudim/economic-calendar/api/v1/data"
 	"github.com/gin-gonic/gin"
@@ -14,15 +14,21 @@ import (
 	"golang.org/x/xerrors"
 )
 
+type EventsDataReciver interface {
+	GetScheduleByDates(ctx context.Context, from, to time.Time, langCode string) ([]data.Event, error)
+	GetEventById(ctx context.Context, eventId int, langCode string) (*data.EventDetails, error)
+	GetHistoryById(ctx context.Context, eventId int) ([]data.EventRow, error)
+}
+
 type EventsController struct {
-	repository *data.EventsRepository
+	repository EventsDataReciver
 	logger     *zap.Logger
 }
 
-func NewEventsController(cnf app.Config, logger *zap.Logger) EventsController {
-	return EventsController{
-		repository: data.NewEventsRepository(cnf),
-		logger:     logger,
+func NewEventsController(r EventsDataReciver, l *zap.Logger) *EventsController {
+	return &EventsController{
+		repository: r,
+		logger:     l,
 	}
 }
 

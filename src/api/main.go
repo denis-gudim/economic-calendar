@@ -4,14 +4,13 @@ import (
 	"log"
 	"os"
 
-	"github.com/denis-gudim/economic-calendar/api/app"
-	v1 "github.com/denis-gudim/economic-calendar/api/v1"
 	"github.com/gin-gonic/gin"
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"github.com/swaggo/gin-swagger/swaggerFiles"
 	ginprometheus "github.com/zsais/go-gin-prometheus"
-	"go.uber.org/zap"
+	"golang.org/x/xerrors"
 
+	"github.com/denis-gudim/economic-calendar/api/app"
 	_ "github.com/denis-gudim/economic-calendar/api/docs"
 )
 
@@ -29,23 +28,21 @@ import (
 // @BasePath /v1/
 func main() {
 
-	cnf := app.Config{}
-
-	if err := cnf.Load(); err != nil {
-		processError(err)
-	}
-
-	logger, err := zap.NewProduction()
+	root, err := app.NewCompositionRoot()
 
 	if err != nil {
+		err = xerrors.Errorf("build composition root failed: %w", err)
 		processError(err)
 	}
 
-	defer logger.Sync()
+	defer root.Close()
 
 	router := gin.Default()
 
-	v1.InitRoutes(router, cnf, logger)
+	if err = root.InitRoutesV1(router); err != nil {
+		err = xerrors.Errorf("init v1 api routes failed: %w", err)
+		processError(err)
+	}
 
 	p := ginprometheus.NewPrometheus("gin")
 	p.Use(router)
@@ -53,6 +50,7 @@ func main() {
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	if err := router.Run(":8080"); err != nil {
+		err = xerrors.Errorf("run http server failed: %w", err)
 		processError(err)
 	}
 }

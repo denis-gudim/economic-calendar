@@ -44,6 +44,7 @@ services:
       build: ./src/api/.
       container_name: calendar-api
       environment:
+        - GIN_MODE=release
         - DB_CONSTR=host=db port=5432 dbname=calendar user=calendar_api_svc password=Yeishee4 sslmode=disable
       ports:
         - 8080:8080
