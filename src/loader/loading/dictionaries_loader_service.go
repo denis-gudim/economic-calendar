@@ -3,7 +3,6 @@ package loading
 import (
 	"github.com/denis-gudim/economic-calendar/loader/app"
 	"github.com/denis-gudim/economic-calendar/loader/data"
-	"github.com/denis-gudim/economic-calendar/loader/investing"
 
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/xerrors"
@@ -13,14 +12,17 @@ type DictionariesLoaderService struct {
 	investingRepository InvestingDataReciver
 	countriesRepository CountriesDataReciver
 	logger              *log.Logger
-	config              app.Config
+	config              *app.Config
 }
 
-func NewDictionariesLoaderService(cnf app.Config, logger *log.Logger) *DictionariesLoaderService {
+func NewDictionariesLoaderService(cnf *app.Config,
+	logger *log.Logger,
+	investingRepository InvestingDataReciver,
+	countriesRepository CountriesDataReciver) *DictionariesLoaderService {
 
 	return &DictionariesLoaderService{
-		investingRepository: investing.NewInvestingRepository(cnf, logger),
-		countriesRepository: data.NewCountriesRepository(cnf),
+		investingRepository: investingRepository,
+		countriesRepository: countriesRepository,
 		logger:              logger,
 		config:              cnf,
 	}

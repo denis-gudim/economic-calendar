@@ -21,7 +21,7 @@ type InvestingHttpClient struct {
 	RetryCount int
 }
 
-func NewInvestingHttpClient(cnf app.Config) *InvestingHttpClient {
+func NewInvestingHttpClient(cnf *app.Config) *InvestingHttpClient {
 	return &InvestingHttpClient{
 		RetryCount: cnf.Loading.RetryCount,
 	}

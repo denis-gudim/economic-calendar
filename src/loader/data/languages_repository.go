@@ -13,23 +13,17 @@ func (r *LanguagesRepository) GetAll() (languages []Language, err error) {
 		return xerrors.Errorf("get all languages failed: %s: %w", msg, err)
 	}
 
-	db, err := r.createConnection()
-
-	if err != nil {
-		return nil, fmtError("create connection", err)
-	}
-
-	defer db.Close()
-
 	rows, err := r.initQueryBuilder().
 		Select("*").
 		From("languages").
-		RunWith(db).
+		RunWith(r.db).
 		Query()
 
 	if err != nil {
 		return nil, fmtError("execute select query", err)
 	}
+
+	defer rows.Close()
 
 	languages = make([]Language, 0, 24)
 

@@ -5,7 +5,6 @@ import (
 
 	"github.com/denis-gudim/economic-calendar/loader/app"
 	"github.com/denis-gudim/economic-calendar/loader/data"
-	"github.com/denis-gudim/economic-calendar/loader/investing"
 
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
@@ -20,17 +19,22 @@ type HistoryLoaderService struct {
 	eventsRepository        EventsDataReciver
 	eventScheduleRepository EventScheduleDataReciver
 	logger                  *log.Logger
-	config                  app.Config
+	config                  *app.Config
 	countriesMap            map[string]int
 }
 
-func NewHistoryLoaderService(cnf app.Config, logger *log.Logger) *HistoryLoaderService {
+func NewHistoryLoaderService(cnf *app.Config,
+	logger *log.Logger,
+	investingRepository InvestingDataReciver,
+	countriesRepository CountriesDataReciver,
+	eventsRepository EventsDataReciver,
+	eventScheduleRepository EventScheduleDataReciver) *HistoryLoaderService {
 
 	return &HistoryLoaderService{
-		investingRepository:     investing.NewInvestingRepository(cnf, logger),
-		countriesRepository:     data.NewCountriesRepository(cnf),
-		eventsRepository:        data.NewEventsRepository(cnf),
-		eventScheduleRepository: data.NewEventScheduleRepository(cnf),
+		investingRepository:     investingRepository,
+		countriesRepository:     countriesRepository,
+		eventsRepository:        eventsRepository,
+		eventScheduleRepository: eventScheduleRepository,
 		logger:                  logger,
 		config:                  cnf,
 	}

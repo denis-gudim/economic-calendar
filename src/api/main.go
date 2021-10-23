@@ -10,7 +10,6 @@ import (
 	ginprometheus "github.com/zsais/go-gin-prometheus"
 	"golang.org/x/xerrors"
 
-	"github.com/denis-gudim/economic-calendar/api/app"
 	_ "github.com/denis-gudim/economic-calendar/api/docs"
 )
 
@@ -28,7 +27,7 @@ import (
 // @BasePath /v1/
 func main() {
 
-	root, err := app.NewCompositionRoot()
+	root, err := NewCompositionRoot()
 
 	if err != nil {
 		err = xerrors.Errorf("build composition root failed: %w", err)

@@ -2,64 +2,54 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
-	"github.com/denis-gudim/economic-calendar/loader/app"
 	"github.com/denis-gudim/economic-calendar/loader/loading"
 	"github.com/go-co-op/gocron"
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/xerrors"
 )
 
 func main() {
 
-	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
-	defer stop()
+	root, err := NewCompositionRoot()
 
-	cnf := app.Config{}
-
-	if err := cnf.Load(); err != nil {
+	if err != nil {
+		err = xerrors.Errorf("build composition root failed: %w", err)
 		processError(err)
 	}
 
-	logger := log.StandardLogger()
-	logger.SetLevel(cnf.Logging.Level)
+	container := root.GetContainer()
 
-	ds := loading.NewDictionariesLoaderService(cnf, logger)
+	defer root.Close()
 
-	if err := ds.Load(); err != nil {
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+
+	defer stop()
+
+	err = container.Invoke(func(s *loading.DictionariesLoaderService) error {
+		return s.Load()
+	})
+
+	if err != nil {
 		processError(err)
 	}
 
 	s := gocron.NewScheduler(time.UTC)
 
-	hs := loading.NewHistoryLoaderService(cnf, logger)
-
-	_, err := s.Cron(cnf.Scheduler.HistoryExpression).
-		SingletonMode().
-		StartImmediately().
-		Do(hs.Load)
+	err = root.InitSchedule(s)
 
 	if err != nil {
-		processError(err)
-	}
-
-	_, err = s.Cron(cnf.Scheduler.RefreshExpression).
-		SingletonMode().
-		Do(func() {
-			fmt.Printf("from refresh job\n")
-		})
-
-	if err != nil {
+		err = xerrors.Errorf("init scheduler failed: %w", err)
 		processError(err)
 	}
 
 	s.StartAsync()
 
-	logger.Info("scheduler started...")
+	log.Info("scheduler started...")
 
 	<-ctx.Done()
 
@@ -67,7 +57,7 @@ func main() {
 
 	s.Stop()
 
-	logger.Info("scheduler stoped")
+	log.Info("scheduler stoped")
 }
 
 func processError(err error) {

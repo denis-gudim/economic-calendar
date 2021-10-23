@@ -1,11 +1,7 @@
 package loading
 
 import (
-	"time"
-
 	"github.com/denis-gudim/economic-calendar/loader/app"
-	"github.com/denis-gudim/economic-calendar/loader/data"
-	"github.com/denis-gudim/economic-calendar/loader/investing"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -14,14 +10,17 @@ type RefreshCalendarService struct {
 	investingRepository     InvestingDataReciver
 	eventScheduleRepository EventScheduleDataReciver
 	logger                  *log.Logger
-	config                  app.Config
-	nextEventTime           time.Time
+	config                  *app.Config
 }
 
-func NewRefreshCalendarService(cnf app.Config, logger *log.Logger) *RefreshCalendarService {
+func NewRefreshCalendarService(cnf *app.Config,
+	logger *log.Logger,
+	investingRepository InvestingDataReciver,
+	eventScheduleRepository EventScheduleDataReciver) *RefreshCalendarService {
+
 	return &RefreshCalendarService{
-		investingRepository:     investing.NewInvestingRepository(cnf, logger),
-		eventScheduleRepository: data.NewEventScheduleRepository(cnf),
+		investingRepository:     investingRepository,
+		eventScheduleRepository: eventScheduleRepository,
 		logger:                  logger,
 		config:                  cnf,
 	}

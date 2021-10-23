@@ -4,9 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/denis-gudim/economic-calendar/loader/app"
-
 	"github.com/PuerkitoBio/goquery"
+	"github.com/denis-gudim/economic-calendar/loader/app"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -28,11 +27,11 @@ type InvestingRepository struct {
 	logger            *log.Logger
 }
 
-func NewInvestingRepository(cnf app.Config, logger *log.Logger) *InvestingRepository {
+func NewInvestingRepository(cnf *app.Config, logger *log.Logger, source InvestingHtmlSource) *InvestingRepository {
 	return &InvestingRepository{
 		defaultLanguageId: cnf.Loading.DefaultLanguageId,
 		batchSize:         cnf.Loading.BatchSize,
-		source:            NewInvestingHttpClient(cnf),
+		source:            source,
 		logger:            logger,
 	}
 }

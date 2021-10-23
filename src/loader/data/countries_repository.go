@@ -1,7 +1,7 @@
 package data
 
 import (
-	"github.com/denis-gudim/economic-calendar/loader/app"
+	"database/sql"
 
 	sq "github.com/Masterminds/squirrel"
 	"golang.org/x/xerrors"
@@ -11,9 +11,9 @@ type CountriesRepository struct {
 	baseRepository
 }
 
-func NewCountriesRepository(cnf app.Config) *CountriesRepository {
+func NewCountriesRepository(db *sql.DB) *CountriesRepository {
 	r := CountriesRepository{}
-	r.ConnectionString = cnf.DB.ConnectionString
+	r.db = db
 	return &r
 }
 
@@ -22,15 +22,6 @@ func (r *CountriesRepository) GetAll() (countries []Country, err error) {
 	fmtError := func(msg string, err error) error {
 		return xerrors.Errorf("get all countries failed: %s: %w", msg, err)
 	}
-
-	db, err := r.createConnection()
-
-	if err != nil {
-		return nil, fmtError("create db connection", err)
-	}
-
-	defer db.Close()
-
 	countries = make([]Country, 0, 100)
 
 	rows, err := r.initQueryBuilder().
@@ -38,12 +29,14 @@ func (r *CountriesRepository) GetAll() (countries []Country, err error) {
 		From("countries c").
 		LeftJoin("country_translations ct ON c.id = ct.country_id").
 		OrderBy("c.id").
-		RunWith(db).
+		RunWith(r.db).
 		Query()
 
 	if err != nil {
 		return nil, fmtError("execute select query", err)
 	}
+
+	defer rows.Close()
 
 	var (
 		langId    *int
@@ -89,15 +82,7 @@ func (r *CountriesRepository) Save(c Country) error {
 		return xerrors.Errorf("save country failed: %s: %w", msg, err)
 	}
 
-	db, err := r.createConnection()
-
-	if err != nil {
-		return fmtError("create db connection", err)
-	}
-
-	defer db.Close()
-
-	tx, err := db.Begin()
+	tx, err := r.db.Begin()
 
 	if err != nil {
 		return fmtError("create db transaction", err)

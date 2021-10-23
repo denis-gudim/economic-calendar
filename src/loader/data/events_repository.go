@@ -1,7 +1,7 @@
 package data
 
 import (
-	"github.com/denis-gudim/economic-calendar/loader/app"
+	"database/sql"
 
 	sq "github.com/Masterminds/squirrel"
 	"golang.org/x/xerrors"
@@ -11,9 +11,9 @@ type EventsRepository struct {
 	baseRepository
 }
 
-func NewEventsRepository(cnf app.Config) *EventsRepository {
+func NewEventsRepository(db *sql.DB) *EventsRepository {
 	r := EventsRepository{}
-	r.ConnectionString = cnf.DB.ConnectionString
+	r.db = db
 	return &r
 }
 
@@ -46,15 +46,7 @@ func (r *EventsRepository) Save(e Event) error {
 		return xerrors.Errorf("save event failed: %s: %w", msg, err)
 	}
 
-	db, err := r.createConnection()
-
-	if err != nil {
-		return fmtError("create db connection", err)
-	}
-
-	defer db.Close()
-
-	tx, err := db.Begin()
+	tx, err := r.db.Begin()
 
 	if err != nil {
 		return fmtError("create db transaction", err)
@@ -122,14 +114,6 @@ func (r *EventsRepository) Save(e Event) error {
 
 func (r *EventsRepository) getWithFilter(filter func(b sq.SelectBuilder) sq.SelectBuilder, fmtError func(suf string, err error) error) (events []Event, err error) {
 
-	db, err := r.createConnection()
-
-	if err != nil {
-		return nil, fmtError("create db connection", err)
-	}
-
-	defer db.Close()
-
 	events = make([]Event, 0, 16)
 
 	query := r.initQueryBuilder().
@@ -142,11 +126,13 @@ func (r *EventsRepository) getWithFilter(filter func(b sq.SelectBuilder) sq.Sele
 		query = filter(query)
 	}
 
-	rows, err := query.RunWith(db).Query()
+	rows, err := query.RunWith(r.db).Query()
 
 	if err != nil {
 		return nil, fmtError("execute select query", err)
 	}
+
+	defer rows.Close()
 
 	var (
 		langId    *int

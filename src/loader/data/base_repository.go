@@ -4,15 +4,10 @@ import (
 	"database/sql"
 
 	sq "github.com/Masterminds/squirrel"
-	_ "github.com/lib/pq"
 )
 
 type baseRepository struct {
-	ConnectionString string
-}
-
-func (r *baseRepository) createConnection() (*sql.DB, error) {
-	return sql.Open("postgres", r.ConnectionString)
+	db *sql.DB
 }
 
 func (r *baseRepository) initQueryBuilder() sq.StatementBuilderType {
