@@ -11,6 +11,19 @@ Project contains docker compose script for local starting and test usages. Use f
 ```bash
 sudo docker-compose up --build
 ```
+
+## Healthchecks & Metrics
+Project contains HTTP healthcheck and prometeus exporter API.
+**API service:**
+```bash
+curl -f 'http://localhost:8080/healtz'
+curl -f 'http://localhost:8080/metrics
+```
+**Loader service:**
+```bash
+curl -f 'http://localhost:8081/healtz'
+```
+
 ## Swagger
 Use following link for swagger UI:
 [http://localhost:8080/swagger/index.html](http://localhost:8080/swagger/index.html "http://localhost:8080/swagger/index.html")
