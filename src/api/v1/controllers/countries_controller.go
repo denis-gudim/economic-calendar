@@ -39,7 +39,6 @@ func NewCountriesController(r CountriesDataReciver, l *zap.Logger) *CountriesCon
 // @Failure 500 {object} httputil.InternalServerError
 // @Router /countries [get]
 func (h *CountriesController) GetByLanguage(ctx *gin.Context) {
-
 	lang := ctx.DefaultQuery("lang", "en")
 
 	countries, err := h.repository.GetCountriesByLanguage(ctx, lang)

@@ -11,6 +11,8 @@ FROM golang:1.17-alpine3.14
 
 WORKDIR /opt/app/
 
+RUN apk --update --no-cache add curl
+
 COPY --from=build-api /src/out/calendar-api calendar-api
 COPY --from=build-api /src/config.env config.env
 

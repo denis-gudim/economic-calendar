@@ -59,6 +59,8 @@ func NewCompositionRoot() (*CompositionRoot, error) {
 	container.Provide(v1_controllers.NewCountriesController)
 	container.Provide(v1_controllers.NewEventsController)
 
+	container.Provide(NewHealtz)
+
 	return &CompositionRoot{
 		db:        db,
 		logger:    logger,
@@ -66,7 +68,7 @@ func NewCompositionRoot() (*CompositionRoot, error) {
 	}, nil
 }
 
-func (r *CompositionRoot) InitRoutesV1(gin *gin.Engine) error {
+func (r *CompositionRoot) InitHttpServer(gin *gin.Engine) error {
 	v1 := gin.Group("v1")
 
 	err := r.container.Invoke(func(c *v1_controllers.CountriesController) {
@@ -76,7 +78,7 @@ func (r *CompositionRoot) InitRoutesV1(gin *gin.Engine) error {
 	})
 
 	if err != nil {
-		return xerrors.Errorf("countries countroller error: %w", err)
+		return xerrors.Errorf("countries controller error: %w", err)
 	}
 
 	err = r.container.Invoke(func(c *v1_controllers.EventsController) {
@@ -88,7 +90,15 @@ func (r *CompositionRoot) InitRoutesV1(gin *gin.Engine) error {
 	})
 
 	if err != nil {
-		return xerrors.Errorf("events countroller error: %w", err)
+		return xerrors.Errorf("events controller error: %w", err)
+	}
+
+	err = r.container.Invoke(func(c *Healtz) {
+		gin.GET("/healtz", c.Handle)
+	})
+
+	if err != nil {
+		return xerrors.Errorf("healtz controller error: %w", err)
 	}
 
 	return nil

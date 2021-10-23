@@ -39,7 +39,7 @@ func main() {
 
 	router := gin.Default()
 
-	if err = root.InitRoutesV1(router); err != nil {
+	if err = root.InitHttpServer(router); err != nil {
 		err = xerrors.Errorf("init v1 api routes failed: %w", err)
 		processError(err)
 	}
