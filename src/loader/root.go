@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"net/http"
 
 	"github.com/denis-gudim/economic-calendar/loader/app"
 	"github.com/denis-gudim/economic-calendar/loader/data"
@@ -78,6 +79,8 @@ func NewCompositionRoot() (*CompositionRoot, error) {
 	container.Provide(loading.NewHistoryLoaderService)
 	container.Provide(loading.NewRefreshCalendarService)
 
+	container.Provide(app.NewHealtz)
+
 	return &CompositionRoot{
 		db:        db,
 		logger:    logger,
@@ -123,6 +126,18 @@ func (r *CompositionRoot) InitSchedule(s *gocron.Scheduler) error {
 
 	if err != nil {
 		return xerrors.Errorf("refresh job scheduling error: %w", err)
+	}
+
+	return nil
+}
+
+func (r *CompositionRoot) InitHttpServer() error {
+	err := r.container.Invoke(func(h *app.Healtz) {
+		http.Handle("/healtz", h)
+	})
+
+	if err != nil {
+		return xerrors.Errorf("health check handler error: %w", err)
 	}
 
 	return nil

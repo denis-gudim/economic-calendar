@@ -1,10 +1,8 @@
 package main
 
 import (
-	"context"
+	"net/http"
 	"os"
-	"os/signal"
-	"syscall"
 	"time"
 
 	"github.com/denis-gudim/economic-calendar/loader/loading"
@@ -25,10 +23,6 @@ func main() {
 	container := root.GetContainer()
 
 	defer root.Close()
-
-	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
-
-	defer stop()
 
 	err = container.Invoke(func(s *loading.DictionariesLoaderService) error {
 		return s.Load()
@@ -51,11 +45,17 @@ func main() {
 
 	log.Info("scheduler started...")
 
-	<-ctx.Done()
+	err = root.InitHttpServer()
 
-	stop()
+	if err != nil {
+		err = xerrors.Errorf("init http server failed: %w", err)
+		processError(err)
+	}
 
-	s.Stop()
+	if err := http.ListenAndServe(":8080", nil); err != nil {
+		err = xerrors.Errorf("start http server failed: %w", err)
+		processError(err)
+	}
 
 	log.Info("scheduler stoped")
 }
