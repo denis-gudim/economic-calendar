@@ -40,7 +40,7 @@ func NewHistoryLoaderService(cnf *app.Config,
 	}
 }
 
-func (s *HistoryLoaderService) Load() {
+func (s *HistoryLoaderService) Load(ctx context.Context) {
 
 	fmtError := func(msg string, err error) error {
 		return xerrors.Errorf("events schedule loading failed: %s: %w", msg, err)
@@ -48,28 +48,28 @@ func (s *HistoryLoaderService) Load() {
 
 	s.logger.Info("events history loading started...")
 
-	err := s.fillCountriesMap()
+	err := s.fillCountriesMap(ctx)
 
 	if err != nil {
 		s.logger.Error(fmtError("fill countries map", err))
 	}
 
-	from, to, err := s.getHistoryLoadingDates()
+	from, to, err := s.getHistoryLoadingDates(ctx)
 
 	if err != nil {
 		s.logger.Error(fmtError("loading dates calculation", err))
 		return
 	}
 
-	ctx, cancelFunc := context.WithCancel(context.Background())
+	_ctx, cancelFunc := context.WithCancel(ctx)
 
 	defer cancelFunc()
 
-	out1, errc1 := s.loadInvestingSchedule(ctx, from, to)
-	out2, errc2 := s.loadInvestingEvents(ctx, out1)
+	out1, errc1 := s.loadInvestingSchedule(_ctx, from, to)
+	out2, errc2 := s.loadInvestingEvents(_ctx, out1)
 
 	for item := range out2 {
-		err = s.eventScheduleRepository.Save(item)
+		err = s.eventScheduleRepository.Save(ctx, item)
 
 		if err != nil {
 			s.logger.Error(fmtError("save loaded schedule items", err))
@@ -88,13 +88,17 @@ func (s *HistoryLoaderService) Load() {
 		if err != nil {
 			s.logger.Error(fmtError("load investing events", err))
 		}
+	case <-_ctx.Done():
+		{
+			s.logger.Info("events history loading canceled")
+		}
+	default:
+		s.logger.Info("events history loading finished")
 	}
-
-	s.logger.Info("events history loading finished")
 }
 
-func (s *HistoryLoaderService) fillCountriesMap() error {
-	countries, err := s.countriesRepository.GetAll()
+func (s *HistoryLoaderService) fillCountriesMap(ctx context.Context) error {
+	countries, err := s.countriesRepository.GetAll(ctx)
 
 	if err != nil {
 		return err
@@ -111,15 +115,15 @@ func (s *HistoryLoaderService) fillCountriesMap() error {
 	return nil
 }
 
-func (s *HistoryLoaderService) getHistoryLoadingDates() (from, to time.Time, err error) {
+func (s *HistoryLoaderService) getHistoryLoadingDates(ctx context.Context) (from, to time.Time, err error) {
 
-	fromRow, err := s.eventScheduleRepository.GetFirst(true)
+	fromRow, err := s.eventScheduleRepository.GetFirst(ctx, true)
 
 	if err != nil {
 		return
 	}
 
-	toRow, err := s.eventScheduleRepository.GetFirst(false)
+	toRow, err := s.eventScheduleRepository.GetFirst(ctx, false)
 
 	if err != nil {
 		return
@@ -151,7 +155,7 @@ func (s *HistoryLoaderService) loadInvestingSchedule(ctx context.Context, from, 
 
 			if !date.After(from) || !date.Before(to) {
 
-				batch, err := s.investingRepository.GetEventsSchedule(date, date)
+				batch, err := s.investingRepository.GetEventsSchedule(ctx, date, date)
 
 				if err != nil {
 					errc <- err
@@ -211,7 +215,7 @@ func (s *HistoryLoaderService) loadInvestingEvents(ctx context.Context, in <-cha
 
 		for scheduleRow := range in {
 
-			event, err := s.eventsRepository.GetById(scheduleRow.EventId)
+			event, err := s.eventsRepository.GetById(ctx, scheduleRow.EventId)
 
 			if err != nil {
 				errc <- err
@@ -220,7 +224,7 @@ func (s *HistoryLoaderService) loadInvestingEvents(ctx context.Context, in <-cha
 
 			if event == nil {
 
-				translations, err := s.investingRepository.GetEventDetails(scheduleRow.EventId)
+				translations, err := s.investingRepository.GetEventDetails(ctx, scheduleRow.EventId)
 
 				s.logger.Infof("event details loaded from source: eventId = %d", scheduleRow.EventId)
 
@@ -259,7 +263,7 @@ func (s *HistoryLoaderService) loadInvestingEvents(ctx context.Context, in <-cha
 					newEvent.OverviewTranslations[langItem.LanguageId] = langItem.Overview
 				}
 
-				err = s.eventsRepository.Save(newEvent)
+				err = s.eventsRepository.Save(ctx, newEvent)
 
 				if err != nil {
 					errc <- err

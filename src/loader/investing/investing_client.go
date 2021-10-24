@@ -2,6 +2,7 @@ package investing
 
 import (
 	"compress/gzip"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -12,6 +13,7 @@ import (
 	"time"
 
 	"github.com/denis-gudim/economic-calendar/loader/app"
+	"golang.org/x/xerrors"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/google/uuid"
@@ -27,14 +29,14 @@ func NewInvestingHttpClient(cnf *app.Config) *InvestingHttpClient {
 	}
 }
 
-func (client *InvestingHttpClient) LoadEventDetailsHtml(eventId, languageId int) (*goquery.Document, error) {
+func (client *InvestingHttpClient) LoadEventDetailsHtml(ctx context.Context, eventId, languageId int) (*goquery.Document, error) {
 	language := InvestingLanguagesMap[languageId]
 	url := fmt.Sprintf("https://%s.investing.com/economic-calendar/%x-%d", language.Domain, [16]byte(uuid.New()), eventId)
 
-	return client.doHtmlRequest("GET", url, nil, nil)
+	return client.doHtmlRequest(ctx, "GET", url, nil, nil)
 }
 
-func (client *InvestingHttpClient) LoadEventsScheduleHtml(from, to time.Time, languageId int) (response *goquery.Document, err error) {
+func (client *InvestingHttpClient) LoadEventsScheduleHtml(ctx context.Context, from, to time.Time, languageId int) (response *goquery.Document, err error) {
 
 	language := InvestingLanguagesMap[languageId]
 	refererUrl := fmt.Sprintf("https://%s.investing.com/economic-calendar", language.Domain)
@@ -61,7 +63,7 @@ func (client *InvestingHttpClient) LoadEventsScheduleHtml(from, to time.Time, la
 		"uuid":          {uuid.New().String()},
 	}
 
-	responseJson, err := client.doJsonRequest("POST", requestUrl, &headers, &params)
+	responseJson, err := client.doJsonRequest(ctx, "POST", requestUrl, &headers, &params)
 
 	if err != nil {
 		return
@@ -79,15 +81,15 @@ func (client *InvestingHttpClient) LoadEventsScheduleHtml(from, to time.Time, la
 	return goquery.NewDocumentFromReader(strings.NewReader(tbl))
 }
 
-func (client *InvestingHttpClient) LoadCountriesHtml(languageId int) (*goquery.Document, error) {
+func (client *InvestingHttpClient) LoadCountriesHtml(ctx context.Context, languageId int) (*goquery.Document, error) {
 	language := InvestingLanguagesMap[languageId]
 	url := fmt.Sprintf("https://%s.investing.com/economic-calendar/?_uid=%x", language.Domain, [16]byte(uuid.New()))
 
-	return client.doHtmlRequest("GET", url, nil, nil)
+	return client.doHtmlRequest(ctx, "GET", url, nil, nil)
 }
 
-func (client *InvestingHttpClient) doJsonRequest(method, url string, headers *http.Header, body *url.Values) (response map[string]interface{}, err error) {
-	reader, err := client.doRetryRequest(method, url, headers, body)
+func (client *InvestingHttpClient) doJsonRequest(ctx context.Context, method, url string, headers *http.Header, body *url.Values) (response map[string]interface{}, err error) {
+	reader, err := client.doRetryRequest(ctx, method, url, headers, body)
 
 	if err != nil {
 		return
@@ -100,8 +102,8 @@ func (client *InvestingHttpClient) doJsonRequest(method, url string, headers *ht
 	return
 }
 
-func (client *InvestingHttpClient) doHtmlRequest(method, url string, headers *http.Header, body *url.Values) (response *goquery.Document, err error) {
-	reader, err := client.doRetryRequest(method, url, headers, body)
+func (client *InvestingHttpClient) doHtmlRequest(ctx context.Context, method, url string, headers *http.Header, body *url.Values) (response *goquery.Document, err error) {
+	reader, err := client.doRetryRequest(ctx, method, url, headers, body)
 
 	if err != nil {
 		return
@@ -112,24 +114,31 @@ func (client *InvestingHttpClient) doHtmlRequest(method, url string, headers *ht
 	return goquery.NewDocumentFromReader(reader)
 }
 
-func (client *InvestingHttpClient) doRetryRequest(method, url string, headers *http.Header, body *url.Values) (reader *gzip.Reader, err error) {
+func (client *InvestingHttpClient) doRetryRequest(ctx context.Context, method, url string, headers *http.Header, body *url.Values) (reader *gzip.Reader, err error) {
 
 	for i := 0; i < client.RetryCount; i++ {
-		reader, err = client.doRequest(method, url, headers, body)
+		select {
+		case <-ctx.Done():
+			return nil, xerrors.Errorf("do retry request canceled")
+		default:
+			{
+				reader, err = client.doRequest(ctx, method, url, headers, body)
 
-		if err == nil {
-			break
-		}
+				if err == nil {
+					break
+				}
 
-		if reader != nil {
-			reader.Close()
+				if reader != nil {
+					reader.Close()
+				}
+			}
 		}
 	}
 
 	return
 }
 
-func (client *InvestingHttpClient) doRequest(method, url string, headers *http.Header, body *url.Values) (reader *gzip.Reader, err error) {
+func (client *InvestingHttpClient) doRequest(ctx context.Context, method, url string, headers *http.Header, body *url.Values) (reader *gzip.Reader, err error) {
 
 	var bodyReader io.Reader
 
@@ -137,7 +146,7 @@ func (client *InvestingHttpClient) doRequest(method, url string, headers *http.H
 		bodyReader = strings.NewReader(shuffleRequestParams(body))
 	}
 
-	request, err := http.NewRequest(method, url, bodyReader)
+	request, err := http.NewRequestWithContext(ctx, method, url, bodyReader)
 
 	if err != nil {
 		return nil, fmt.Errorf("investing client create request: %w", err)

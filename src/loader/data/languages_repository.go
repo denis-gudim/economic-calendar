@@ -1,6 +1,8 @@
 package data
 
 import (
+	"context"
+
 	"golang.org/x/xerrors"
 )
 
@@ -8,7 +10,7 @@ type LanguagesRepository struct {
 	baseRepository
 }
 
-func (r *LanguagesRepository) GetAll() (languages []Language, err error) {
+func (r *LanguagesRepository) GetAll(ctx context.Context) (languages []Language, err error) {
 	fmtError := func(msg string, err error) error {
 		return xerrors.Errorf("get all languages failed: %s: %w", msg, err)
 	}
@@ -17,7 +19,7 @@ func (r *LanguagesRepository) GetAll() (languages []Language, err error) {
 		Select("*").
 		From("languages").
 		RunWith(r.db).
-		Query()
+		QueryContext(ctx)
 
 	if err != nil {
 		return nil, fmtError("execute select query", err)

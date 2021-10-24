@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"net/http"
 
@@ -99,13 +100,13 @@ func (r *CompositionRoot) Close() {
 	}
 }
 
-func (r *CompositionRoot) InitSchedule(s *gocron.Scheduler) error {
+func (r *CompositionRoot) InitSchedule(ctx context.Context, s *gocron.Scheduler) error {
 
 	err := r.container.Invoke(func(cnf *app.Config, srv *loading.HistoryLoaderService) error {
 		_, err := s.Cron(r.cnf.Scheduler.HistoryExpression).
 			SingletonMode().
 			StartImmediately().
-			Do(srv.Load)
+			Do(srv.Load, ctx)
 
 		return err
 	})

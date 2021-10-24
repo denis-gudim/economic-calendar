@@ -1,6 +1,7 @@
 package data
 
 import (
+	"context"
 	"database/sql"
 
 	sq "github.com/Masterminds/squirrel"
@@ -17,7 +18,7 @@ func NewCountriesRepository(db *sql.DB) *CountriesRepository {
 	return &r
 }
 
-func (r *CountriesRepository) GetAll() (countries []Country, err error) {
+func (r *CountriesRepository) GetAll(ctx context.Context) (countries []Country, err error) {
 
 	fmtError := func(msg string, err error) error {
 		return xerrors.Errorf("get all countries failed: %s: %w", msg, err)
@@ -30,7 +31,7 @@ func (r *CountriesRepository) GetAll() (countries []Country, err error) {
 		LeftJoin("country_translations ct ON c.id = ct.country_id").
 		OrderBy("c.id").
 		RunWith(r.db).
-		Query()
+		QueryContext(ctx)
 
 	if err != nil {
 		return nil, fmtError("execute select query", err)
@@ -76,13 +77,13 @@ func (r *CountriesRepository) GetAll() (countries []Country, err error) {
 	return
 }
 
-func (r *CountriesRepository) Save(c Country) error {
+func (r *CountriesRepository) Save(ctx context.Context, c Country) error {
 
 	fmtError := func(msg string, err error) error {
 		return xerrors.Errorf("save country failed: %s: %w", msg, err)
 	}
 
-	tx, err := r.db.Begin()
+	tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelRepeatableRead})
 
 	if err != nil {
 		return fmtError("create db transaction", err)
@@ -106,7 +107,7 @@ func (r *CountriesRepository) Save(c Country) error {
 				Set("currency", c.Currency).
 				Set("name", c.Name))
 
-	_, err = upsertQuery.RunWith(tx).Exec()
+	_, err = upsertQuery.RunWith(tx).ExecContext(ctx)
 
 	if err != nil {
 		return fmtError("execute upsert country query", err)
@@ -116,7 +117,7 @@ func (r *CountriesRepository) Save(c Country) error {
 		Delete("country_translations").
 		Where(sq.Eq{"country_id": c.Id})
 
-	_, err = deleteQuery.RunWith(tx).Exec()
+	_, err = deleteQuery.RunWith(tx).ExecContext(ctx)
 
 	if err != nil {
 		return fmtError("execute delete country translations query", err)
@@ -129,7 +130,7 @@ func (r *CountriesRepository) Save(c Country) error {
 			Columns("country_id", "language_id", "title").
 			Values(c.Id, langId, title)
 
-		_, err = insertQuery.RunWith(tx).Exec()
+		_, err = insertQuery.RunWith(tx).ExecContext(ctx)
 
 		if err != nil {
 			return fmtError("execute insert country translation query", err)

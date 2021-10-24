@@ -1,6 +1,7 @@
 package data
 
 import (
+	"context"
 	"database/sql"
 
 	sq "github.com/Masterminds/squirrel"
@@ -17,7 +18,7 @@ func NewEventsRepository(db *sql.DB) *EventsRepository {
 	return &r
 }
 
-func (r *EventsRepository) GetById(id int) (*Event, error) {
+func (r *EventsRepository) GetById(ctx context.Context, id int) (*Event, error) {
 
 	fmtError := func(msg string, err error) error {
 		return xerrors.Errorf("get events by id ( id: %d): %s: %w", id, msg, err)
@@ -27,7 +28,7 @@ func (r *EventsRepository) GetById(id int) (*Event, error) {
 		return b.Where(sq.Eq{"id": id})
 	}
 
-	res, err := r.getWithFilter(filter, fmtError)
+	res, err := r.getWithFilter(ctx, filter, fmtError)
 
 	if err != nil {
 		return nil, err
@@ -40,13 +41,13 @@ func (r *EventsRepository) GetById(id int) (*Event, error) {
 	return &res[0], nil
 }
 
-func (r *EventsRepository) Save(e Event) error {
+func (r *EventsRepository) Save(ctx context.Context, e Event) error {
 
 	fmtError := func(msg string, err error) error {
 		return xerrors.Errorf("save event failed: %s: %w", msg, err)
 	}
 
-	tx, err := r.db.Begin()
+	tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelRepeatableRead})
 
 	if err != nil {
 		return fmtError("create db transaction", err)
@@ -71,7 +72,7 @@ func (r *EventsRepository) Save(e Event) error {
 				Set("source", e.Source).
 				Set("source_url", e.SourceUrl))
 
-	_, err = upsertQuery.RunWith(tx).Exec()
+	_, err = upsertQuery.RunWith(tx).ExecContext(ctx)
 
 	if err != nil {
 		return fmtError("execute upsert event query", err)
@@ -81,7 +82,7 @@ func (r *EventsRepository) Save(e Event) error {
 		Delete("event_translations").
 		Where(sq.Eq{"event_id": e.Id})
 
-	_, err = deleteQuery.RunWith(tx).Exec()
+	_, err = deleteQuery.RunWith(tx).ExecContext(ctx)
 
 	if err != nil {
 		return fmtError("execute delete event translations query", err)
@@ -96,7 +97,7 @@ func (r *EventsRepository) Save(e Event) error {
 			Columns("event_id", "language_id", "title", "overview").
 			Values(e.Id, langId, title, overview)
 
-		_, err = insertQuery.RunWith(tx).Exec()
+		_, err = insertQuery.RunWith(tx).ExecContext(ctx)
 
 		if err != nil {
 			return fmtError("execute insert event translation query", err)
@@ -112,7 +113,7 @@ func (r *EventsRepository) Save(e Event) error {
 	return nil
 }
 
-func (r *EventsRepository) getWithFilter(filter func(b sq.SelectBuilder) sq.SelectBuilder, fmtError func(suf string, err error) error) (events []Event, err error) {
+func (r *EventsRepository) getWithFilter(ctx context.Context, filter func(b sq.SelectBuilder) sq.SelectBuilder, fmtError func(suf string, err error) error) (events []Event, err error) {
 
 	events = make([]Event, 0, 16)
 
@@ -126,7 +127,7 @@ func (r *EventsRepository) getWithFilter(filter func(b sq.SelectBuilder) sq.Sele
 		query = filter(query)
 	}
 
-	rows, err := query.RunWith(r.db).Query()
+	rows, err := query.RunWith(r.db).QueryContext(ctx)
 
 	if err != nil {
 		return nil, fmtError("execute select query", err)

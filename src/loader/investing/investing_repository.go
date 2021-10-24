@@ -1,6 +1,7 @@
 package investing
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -15,9 +16,9 @@ type InvestingDataEntry interface {
 }
 
 type InvestingHtmlSource interface {
-	LoadEventsScheduleHtml(from, to time.Time, languageId int) (*goquery.Document, error)
-	LoadEventDetailsHtml(eventId, languageId int) (*goquery.Document, error)
-	LoadCountriesHtml(languageId int) (*goquery.Document, error)
+	LoadEventsScheduleHtml(ctx context.Context, from, to time.Time, languageId int) (*goquery.Document, error)
+	LoadEventDetailsHtml(ctx context.Context, eventId, languageId int) (*goquery.Document, error)
+	LoadCountriesHtml(ctx context.Context, languageId int) (*goquery.Document, error)
 }
 
 type InvestingRepository struct {
@@ -36,10 +37,10 @@ func NewInvestingRepository(cnf *app.Config, logger *log.Logger, source Investin
 	}
 }
 
-func (repository *InvestingRepository) GetEventsSchedule(dateFrom, dateTo time.Time) (itemsMap map[int][]*InvestingScheduleRow, err error) {
+func (repository *InvestingRepository) GetEventsSchedule(ctx context.Context, dateFrom, dateTo time.Time) (itemsMap map[int][]*InvestingScheduleRow, err error) {
 
-	rows, err := repository.getItemsByLanguage(func(languageId int) ([]InvestingDataEntry, error) {
-		langItems, err := repository.GetEventsScheduleByLanguage(languageId, dateFrom, dateTo)
+	rows, err := repository.getItemsByLanguage(ctx, func(ctx context.Context, languageId int) ([]InvestingDataEntry, error) {
+		langItems, err := repository.GetEventsScheduleByLanguage(ctx, languageId, dateFrom, dateTo)
 
 		if err != nil {
 			return nil, err
@@ -77,10 +78,10 @@ func (repository *InvestingRepository) GetEventsSchedule(dateFrom, dateTo time.T
 	return
 }
 
-func (repository *InvestingRepository) GetEventDetails(eventId int) (items []*InvestingCalendarEvent, err error) {
+func (repository *InvestingRepository) GetEventDetails(ctx context.Context, eventId int) (items []*InvestingCalendarEvent, err error) {
 
-	rows, err := repository.getItemsByLanguage(func(languageId int) ([]InvestingDataEntry, error) {
-		return repository.getEventDetailsByLanguage(languageId, eventId)
+	rows, err := repository.getItemsByLanguage(ctx, func(ctx context.Context, languageId int) ([]InvestingDataEntry, error) {
+		return repository.getEventDetailsByLanguage(ctx, languageId, eventId)
 	})
 
 	if err != nil {
@@ -96,10 +97,10 @@ func (repository *InvestingRepository) GetEventDetails(eventId int) (items []*In
 	return
 }
 
-func (repository *InvestingRepository) GetCountries() (itemsMap map[int][]*InvestingCountry, err error) {
+func (repository *InvestingRepository) GetCountries(ctx context.Context) (itemsMap map[int][]*InvestingCountry, err error) {
 
-	rows, err := repository.getItemsByLanguage(func(languageId int) ([]InvestingDataEntry, error) {
-		return repository.getCountriesByLanguage(languageId)
+	rows, err := repository.getItemsByLanguage(ctx, func(ctx context.Context, languageId int) ([]InvestingDataEntry, error) {
+		return repository.getCountriesByLanguage(ctx, languageId)
 	})
 
 	if err != nil {
@@ -124,9 +125,9 @@ func (repository *InvestingRepository) GetCountries() (itemsMap map[int][]*Inves
 	return
 }
 
-func (r *InvestingRepository) GetEventsScheduleByLanguage(languageId int, dateFrom, dateTo time.Time) (items []*InvestingScheduleRow, err error) {
+func (r *InvestingRepository) GetEventsScheduleByLanguage(ctx context.Context, languageId int, dateFrom, dateTo time.Time) (items []*InvestingScheduleRow, err error) {
 
-	html, err := r.source.LoadEventsScheduleHtml(dateFrom, dateTo, languageId)
+	html, err := r.source.LoadEventsScheduleHtml(ctx, dateFrom, dateTo, languageId)
 
 	if err != nil {
 		return
@@ -135,8 +136,8 @@ func (r *InvestingRepository) GetEventsScheduleByLanguage(languageId int, dateFr
 	return NewInvestingScheduleParser().ParseScheduleHtml(html)
 }
 
-func (r *InvestingRepository) getEventDetailsByLanguage(languageId, eventId int) (event []InvestingDataEntry, err error) {
-	html, err := r.source.LoadEventDetailsHtml(eventId, languageId)
+func (r *InvestingRepository) getEventDetailsByLanguage(ctx context.Context, languageId, eventId int) (event []InvestingDataEntry, err error) {
+	html, err := r.source.LoadEventDetailsHtml(ctx, eventId, languageId)
 
 	if err != nil {
 		return
@@ -155,8 +156,8 @@ func (r *InvestingRepository) getEventDetailsByLanguage(languageId, eventId int)
 	return []InvestingDataEntry{_event}, nil
 }
 
-func (r *InvestingRepository) getCountriesByLanguage(languageId int) (items []InvestingDataEntry, err error) {
-	html, err := r.source.LoadCountriesHtml(languageId)
+func (r *InvestingRepository) getCountriesByLanguage(ctx context.Context, languageId int) (items []InvestingDataEntry, err error) {
+	html, err := r.source.LoadCountriesHtml(ctx, languageId)
 
 	if err != nil {
 		return
@@ -180,8 +181,8 @@ func (r *InvestingRepository) getCountriesByLanguage(languageId int) (items []In
 	return
 }
 
-func (r *InvestingRepository) getItemsByLanguage(itemsGetter func(languageId int) ([]InvestingDataEntry, error)) (items []InvestingDataEntry, err error) {
-	items, err = itemsGetter(r.defaultLanguageId)
+func (r *InvestingRepository) getItemsByLanguage(ctx context.Context, itemsGetter func(ctx context.Context, languageId int) ([]InvestingDataEntry, error)) (items []InvestingDataEntry, err error) {
+	items, err = itemsGetter(ctx, r.defaultLanguageId)
 
 	if err != nil {
 		lang := InvestingLanguagesMap[r.defaultLanguageId]
@@ -205,7 +206,7 @@ func (r *InvestingRepository) getItemsByLanguage(itemsGetter func(languageId int
 
 	_itemsGetter := func(lang *InvestingLanguage) ([]InvestingDataEntry, error) {
 
-		langItems, e := itemsGetter(lang.Id)
+		langItems, e := itemsGetter(ctx, lang.Id)
 
 		if e != nil {
 			return nil, e
@@ -259,7 +260,12 @@ func (r *InvestingRepository) getItemsByLanguage(itemsGetter func(languageId int
 	}
 
 	for i := 0; i < count; i++ {
-		items = append(items, <-itemsChannel...)
+		select {
+		case batch := <-itemsChannel:
+			items = append(items, batch...)
+		case <-ctx.Done():
+			return make([]InvestingDataEntry, 0), nil
+		}
 	}
 
 	return

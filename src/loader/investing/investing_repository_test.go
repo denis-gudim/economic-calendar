@@ -1,6 +1,7 @@
 package investing
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"testing"
@@ -17,7 +18,7 @@ type InvestingHtmlSourceMock struct {
 	mock.Mock
 }
 
-func (m *InvestingHtmlSourceMock) LoadEventsScheduleHtml(from, to time.Time, languageId int) (*goquery.Document, error) {
+func (m *InvestingHtmlSourceMock) LoadEventsScheduleHtml(ctx context.Context, from, to time.Time, languageId int) (*goquery.Document, error) {
 
 	if languageId == 2 {
 		return nil, fmt.Errorf("test error")
@@ -54,7 +55,7 @@ func (m *InvestingHtmlSourceMock) LoadEventsScheduleHtml(from, to time.Time, lan
 	return goquery.NewDocumentFromReader(strings.NewReader(html))
 }
 
-func (m *InvestingHtmlSourceMock) LoadEventDetailsHtml(eventId, languageId int) (*goquery.Document, error) {
+func (m *InvestingHtmlSourceMock) LoadEventDetailsHtml(ctx context.Context, eventId, languageId int) (*goquery.Document, error) {
 
 	if languageId == 2 {
 		return nil, fmt.Errorf("test error")
@@ -85,7 +86,7 @@ func (m *InvestingHtmlSourceMock) LoadEventDetailsHtml(eventId, languageId int) 
 	return goquery.NewDocumentFromReader(strings.NewReader(html))
 }
 
-func (m *InvestingHtmlSourceMock) LoadCountriesHtml(languageId int) (*goquery.Document, error) {
+func (m *InvestingHtmlSourceMock) LoadCountriesHtml(ctx context.Context, languageId int) (*goquery.Document, error) {
 
 	if languageId == 2 {
 		return nil, fmt.Errorf("test error")
@@ -104,13 +105,14 @@ func (m *InvestingHtmlSourceMock) LoadCountriesHtml(languageId int) (*goquery.Do
 
 func Test_InvestingRepository_getEventsScheduleByLanguage(t *testing.T) {
 	// Arrange
+	ctx := context.Background()
 	source := &InvestingHtmlSourceMock{}
 	parser := &InvestingRepository{source: source}
 	time := time.Now()
 	languageId := 1
 
 	// Act
-	actualResult, err := parser.GetEventsScheduleByLanguage(languageId, time, time)
+	actualResult, err := parser.GetEventsScheduleByLanguage(ctx, languageId, time, time)
 
 	// Assert
 	source.AssertExpectations(t)
@@ -122,6 +124,7 @@ func Test_InvestingRepository_getEventsScheduleByLanguage(t *testing.T) {
 
 func Test_InvestingRepository_GetEventsSchedule(t *testing.T) {
 	// Arrange
+	ctx := context.Background()
 	logger, hook := test.NewNullLogger()
 	source := &InvestingHtmlSourceMock{}
 	parser := &InvestingRepository{
@@ -133,7 +136,7 @@ func Test_InvestingRepository_GetEventsSchedule(t *testing.T) {
 	time := time.Now()
 
 	// Act
-	actualResult, err := parser.GetEventsSchedule(time, time)
+	actualResult, err := parser.GetEventsSchedule(ctx, time, time)
 
 	// Assert
 	source.AssertExpectations(t)
@@ -149,13 +152,14 @@ func Test_InvestingRepository_GetEventsSchedule(t *testing.T) {
 
 func Test_InvestingRepository_getEventDetailsByLanguage(t *testing.T) {
 	// Arrange
+	ctx := context.Background()
 	source := &InvestingHtmlSourceMock{}
 	parser := &InvestingRepository{source: source}
 	eventId := 123
 	languageId := 1
 
 	// Act
-	actualResult, err := parser.getEventDetailsByLanguage(languageId, eventId)
+	actualResult, err := parser.getEventDetailsByLanguage(ctx, languageId, eventId)
 
 	// Assert
 	source.AssertExpectations(t)
@@ -166,6 +170,7 @@ func Test_InvestingRepository_getEventDetailsByLanguage(t *testing.T) {
 
 func Test_InvestingRepository_GetEventDetails(t *testing.T) {
 	// Arrange
+	ctx := context.Background()
 	logger, hook := test.NewNullLogger()
 	source := &InvestingHtmlSourceMock{}
 	parser := &InvestingRepository{
@@ -176,7 +181,7 @@ func Test_InvestingRepository_GetEventDetails(t *testing.T) {
 	eventId := 123
 
 	// Act
-	actualResult, err := parser.GetEventDetails(eventId)
+	actualResult, err := parser.GetEventDetails(ctx, eventId)
 
 	// Assert
 	source.AssertExpectations(t)
@@ -190,12 +195,13 @@ func Test_InvestingRepository_GetEventDetails(t *testing.T) {
 
 func Test_InvestingRepository_getCountriesByLanguage(t *testing.T) {
 	// Arrange
+	ctx := context.Background()
 	source := &InvestingHtmlSourceMock{}
 	parser := &InvestingRepository{source: source}
 	languageId := 1
 
 	// Act
-	actualResult, err := parser.getCountriesByLanguage(languageId)
+	actualResult, err := parser.getCountriesByLanguage(ctx, languageId)
 
 	// Assert
 	source.AssertExpectations(t)
@@ -207,9 +213,10 @@ func Test_InvestingRepository_getCountriesByLanguage(t *testing.T) {
 
 func Test_InvestingRepository_GetCountries(t *testing.T) {
 	// Arrange
+	ctx := context.Background()
 	logger, hook := test.NewNullLogger()
 	source := &InvestingHtmlSourceMock{}
-	parser := &InvestingRepository{
+	repository := &InvestingRepository{
 		source:            source,
 		defaultLanguageId: 1,
 		batchSize:         4,
@@ -217,7 +224,7 @@ func Test_InvestingRepository_GetCountries(t *testing.T) {
 	}
 
 	// Act
-	actualResult, err := parser.GetCountries()
+	actualResult, err := repository.GetCountries(ctx)
 
 	// Assert
 	source.AssertExpectations(t)

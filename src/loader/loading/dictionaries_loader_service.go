@@ -1,6 +1,8 @@
 package loading
 
 import (
+	"context"
+
 	"github.com/denis-gudim/economic-calendar/loader/app"
 	"github.com/denis-gudim/economic-calendar/loader/data"
 
@@ -28,7 +30,7 @@ func NewDictionariesLoaderService(cnf *app.Config,
 	}
 }
 
-func (s *DictionariesLoaderService) Load() error {
+func (s *DictionariesLoaderService) Load(ctx context.Context) error {
 
 	fmtError := func(err error) error {
 		return xerrors.Errorf("countries dictionary loading failed: %w", err)
@@ -36,7 +38,7 @@ func (s *DictionariesLoaderService) Load() error {
 
 	s.logger.Info("countries dictionary loading started...")
 
-	countries, err := s.countriesRepository.GetAll()
+	countries, err := s.countriesRepository.GetAll(ctx)
 
 	if err != nil {
 		return fmtError(err)
@@ -56,7 +58,7 @@ func (s *DictionariesLoaderService) Load() error {
 		return nil
 	}
 
-	invCountries, err := s.investingRepository.GetCountries()
+	invCountries, err := s.investingRepository.GetCountries(ctx)
 
 	if err != nil {
 		return fmtError(err)
@@ -75,7 +77,7 @@ func (s *DictionariesLoaderService) Load() error {
 			c.NameTranslations[icl.LanguageId] = icl.Title
 		}
 
-		err = s.countriesRepository.Save(c)
+		err = s.countriesRepository.Save(ctx, c)
 
 		if err != nil {
 			return fmtError(err)
