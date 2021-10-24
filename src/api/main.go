@@ -1,8 +1,13 @@
 package main
 
 import (
+	"context"
 	"log"
+	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	ginSwagger "github.com/swaggo/gin-swagger"
@@ -36,10 +41,14 @@ func main() {
 
 	defer root.Close()
 
+	startHttpServer(root)
+}
+
+func startHttpServer(root *CompositionRoot) {
 	router := gin.Default()
 
-	if err = root.InitHttpServer(router); err != nil {
-		err = xerrors.Errorf("init v1 api routes failed: %w", err)
+	if err := root.InitHttpServer(router); err != nil {
+		err = xerrors.Errorf("init http server failed: %w", err)
 		processError(err)
 	}
 
@@ -48,8 +57,32 @@ func main() {
 
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
-	if err := router.Run(":8080"); err != nil {
-		err = xerrors.Errorf("run http server failed: %w", err)
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+
+	srv := &http.Server{
+		Addr:    ":8080",
+		Handler: router,
+	}
+
+	go func() {
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			err = xerrors.Errorf("listen http server failed: %w", err)
+			processError(err)
+		}
+	}()
+
+	<-ctx.Done()
+
+	stop()
+
+	log.Println("shutting down gracefully, press Ctrl+C again to force")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if err := srv.Shutdown(ctx); err != nil {
+		err = xerrors.Errorf("server forced to shutdown: %w", err)
 		processError(err)
 	}
 }
