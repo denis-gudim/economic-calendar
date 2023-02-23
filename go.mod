@@ -14,6 +14,8 @@ require (
 	github.com/sirupsen/logrus v1.9.0
 	github.com/spf13/viper v1.15.0
 	github.com/stretchr/testify v1.8.1
+	github.com/swaggo/files v1.0.0
+	github.com/swaggo/gin-swagger v1.5.3
 	github.com/swaggo/swag v1.8.10
 	github.com/zsais/go-gin-prometheus v0.1.0
 	go.uber.org/dig v1.16.1
