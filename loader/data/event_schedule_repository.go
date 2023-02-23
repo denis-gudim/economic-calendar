@@ -3,10 +3,10 @@ package data
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"time"
 
 	sq "github.com/Masterminds/squirrel"
-	"golang.org/x/xerrors"
 )
 
 type EventScheduleRepository struct {
@@ -21,7 +21,7 @@ func NewEventScheduleRepository(db *sql.DB) *EventScheduleRepository {
 
 func (r *EventScheduleRepository) GetFirst(ctx context.Context, done bool) (es *EventSchedule, err error) {
 	fmtError := func(text string, err error) error {
-		return xerrors.Errorf("get first events schedule: %s: %w", text, err)
+		return fmt.Errorf("get first events schedule: %s: %w", text, err)
 	}
 
 	filter := func(b sq.SelectBuilder) sq.SelectBuilder {
@@ -42,12 +42,11 @@ func (r *EventScheduleRepository) GetFirst(ctx context.Context, done bool) (es *
 }
 
 func (r *EventScheduleRepository) GetByDates(ctx context.Context, from, to time.Time) (events []EventSchedule, err error) {
-
 	fromVal := from.Format("2006-01-02")
 	toVal := to.Format("2006-01-02")
 
 	fmtError := func(text string, err error) error {
-		return xerrors.Errorf("get by dates ( from: %s, to: %s ) events schedule: %s: %w", fromVal, toVal, text, err)
+		return fmt.Errorf("get by dates ( from: %s, to: %s ) events schedule: %s: %w", fromVal, toVal, text, err)
 	}
 
 	filter := func(b sq.SelectBuilder) sq.SelectBuilder {
@@ -61,17 +60,10 @@ func (r *EventScheduleRepository) GetByDates(ctx context.Context, from, to time.
 }
 
 func (r *EventScheduleRepository) Save(ctx context.Context, es EventSchedule) error {
-
-	fmtError := func(msg string, err error) error {
-		return xerrors.Errorf("save event schedule failed: %s: %w", msg, err)
-	}
-
 	tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelRepeatableRead})
-
 	if err != nil {
-		return fmtError("create db transaction", err)
+		return fmt.Errorf("create db transaction error: %w", err)
 	}
-
 	defer func() {
 		if tx != nil && err != nil {
 			tx.Rollback()
@@ -92,41 +84,33 @@ func (r *EventScheduleRepository) Save(ctx context.Context, es EventSchedule) er
 				Set("done", es.IsDone).
 				Set("type", es.Type).
 				Set("event_id", es.EventId))
-
 	_, err = upsertQuery.RunWith(tx).ExecContext(ctx)
-
 	if err != nil {
-		return fmtError("execute upsert query", err)
+		return fmt.Errorf("execute upsert query error: %w", err)
 	}
 
 	deleteQuery := r.initQueryBuilder().
 		Delete("event_schedule_translations").
 		Where(sq.Eq{"event_schedule_id": es.Id})
-
 	_, err = deleteQuery.RunWith(tx).ExecContext(ctx)
-
 	if err != nil {
-		return fmtError("execute delete translations query", err)
+		return fmt.Errorf("execute delete translations query error: %w", err)
 	}
 
 	for langId, title := range es.TitleTranslations {
-
 		insertQuery := r.initQueryBuilder().
 			Insert("event_schedule_translations").
 			Columns("event_schedule_id", "language_id", "title").
 			Values(es.Id, langId, title)
-
 		_, err = insertQuery.RunWith(tx).ExecContext(ctx)
-
 		if err != nil {
-			return fmtError("execute insert translation query", err)
+			return fmt.Errorf("execute insert translation query: %w", err)
 		}
 	}
 
 	err = tx.Commit()
-
 	if err != nil {
-		return fmtError("commit transaction", err)
+		return fmt.Errorf("commit transaction error: %w", err)
 	}
 
 	return nil
@@ -147,11 +131,9 @@ func (r *EventScheduleRepository) getWithFilter(ctx context.Context, filter func
 	}
 
 	rows, err := query.RunWith(r.db).QueryContext(ctx)
-
 	if err != nil {
 		return nil, fmtError("execute select query", err)
 	}
-
 	defer rows.Close()
 
 	var (

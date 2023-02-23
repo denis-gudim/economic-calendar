@@ -1,13 +1,13 @@
 package loader
 
 import (
+	"fmt"
 	"reflect"
 	"time"
 
 	"github.com/mitchellh/mapstructure"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-	"golang.org/x/xerrors"
 )
 
 type Config struct {
@@ -34,11 +34,10 @@ func (cnf *Config) Load() error {
 
 	viper.SetConfigType("env")
 	viper.AddConfigPath(".")
-
 	viper.AutomaticEnv()
 
 	if err := viper.ReadInConfig(); err != nil {
-		return xerrors.Errorf("Error reading config file: %w", err)
+		return fmt.Errorf("read configuration file error: %w", err)
 	}
 
 	return viper.Unmarshal(cnf, func(m *mapstructure.DecoderConfig) {

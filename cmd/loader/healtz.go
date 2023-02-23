@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
-	"golang.org/x/xerrors"
 )
 
 type Healtz struct {
@@ -78,23 +77,19 @@ func (h *Healtz) checkDB(req *http.Request) (interface{}, error) {
 
 	count := 0
 	start := time.Now()
-
 	row := h.db.QueryRowContext(req.Context(), "SELECT COUNT(*) FROM countries")
 
 	err := row.Scan(&count)
-
-	out.Duration = time.Since(start).String()
-	out.Result = count
-
-	if err == nil && count == 0 {
-		err = fmt.Errorf("validation result is empty")
-	}
-
 	if err != nil {
 		out.Status = "DOWN"
 		out.Result = err.Error()
-		err = xerrors.Errorf("db healthcheck err: %w", err)
+		err = fmt.Errorf("database healthcheck err: %w", err)
+	} else if count == 0 {
+		err = fmt.Errorf("validation result is empty")
 	}
+
+	out.Duration = time.Since(start).String()
+	out.Result = count
 
 	return out, err
 }

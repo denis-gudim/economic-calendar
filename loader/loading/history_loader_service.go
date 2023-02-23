@@ -1,6 +1,7 @@
 package loading
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/denis-gudim/economic-calendar/loader"
@@ -8,7 +9,6 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
-	"golang.org/x/xerrors"
 )
 
 const daySec = 24 * 60 * 60
@@ -43,7 +43,7 @@ func NewHistoryLoaderService(cnf *loader.Config,
 func (s *HistoryLoaderService) Load(ctx context.Context) {
 
 	fmtError := func(msg string, err error) error {
-		return xerrors.Errorf("events schedule loading failed: %s: %w", msg, err)
+		return fmt.Errorf("events schedule loading failed: %s: %w", msg, err)
 	}
 
 	s.logger.Info("events history loading started...")
@@ -115,25 +115,20 @@ func (s *HistoryLoaderService) fillCountriesMap(ctx context.Context) error {
 	return nil
 }
 
-func (s *HistoryLoaderService) getHistoryLoadingDates(ctx context.Context) (from, to time.Time, err error) {
+func (s *HistoryLoaderService) getHistoryLoadingDates(ctx context.Context) (time.Time, time.Time, error) {
+	var from, to time.Time
 
 	fromRow, err := s.eventScheduleRepository.GetFirst(ctx, true)
-
 	if err != nil {
-		return
-	}
-
-	toRow, err := s.eventScheduleRepository.GetFirst(ctx, false)
-
-	if err != nil {
-		return
-	}
-
-	if fromRow != nil {
+		return time.Time{}, time.Time{}, fmt.Errorf("get first completed events schedule row: %w", err)
+	} else if fromRow != nil {
 		from = time.Unix(fromRow.TimeStamp.Unix()/daySec*daySec, 0)
 	}
 
-	if toRow != nil {
+	toRow, err := s.eventScheduleRepository.GetFirst(ctx, false)
+	if err != nil {
+		return time.Time{}, time.Time{}, fmt.Errorf("get first uncompleted events schedule row: %w", err)
+	} else if toRow != nil {
 		to = time.Unix(toRow.TimeStamp.Unix()/daySec*daySec, 0)
 	}
 
@@ -169,7 +164,7 @@ func (s *HistoryLoaderService) loadInvestingSchedule(ctx context.Context, from, 
 					langItem := translations[0]
 
 					if len(translations) == 0 {
-						errc <- xerrors.Errorf("translations list is empty")
+						errc <- fmt.Errorf("translations list is empty")
 						return
 					}
 
@@ -234,7 +229,7 @@ func (s *HistoryLoaderService) loadInvestingEvents(ctx context.Context, in <-cha
 				}
 
 				if len(translations) == 0 {
-					errc <- xerrors.Errorf("translations list is empty")
+					errc <- fmt.Errorf("translations list is empty")
 					return
 				}
 
@@ -243,7 +238,7 @@ func (s *HistoryLoaderService) loadInvestingEvents(ctx context.Context, in <-cha
 				countryId, ok := s.countriesMap[langItem.Country]
 
 				if !ok {
-					errc <- xerrors.Errorf("country with name '%s' not found in map", langItem.Country)
+					errc <- fmt.Errorf("country with name '%s' not found in map", langItem.Country)
 					return
 				}
 

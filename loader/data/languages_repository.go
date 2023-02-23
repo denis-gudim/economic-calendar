@@ -2,8 +2,7 @@ package data
 
 import (
 	"context"
-
-	"golang.org/x/xerrors"
+	"fmt"
 )
 
 type LanguagesRepository struct {
@@ -11,10 +10,6 @@ type LanguagesRepository struct {
 }
 
 func (r *LanguagesRepository) GetAll(ctx context.Context) (languages []Language, err error) {
-	fmtError := func(msg string, err error) error {
-		return xerrors.Errorf("get all languages failed: %s: %w", msg, err)
-	}
-
 	rows, err := r.initQueryBuilder().
 		Select("*").
 		From("languages").
@@ -22,7 +17,7 @@ func (r *LanguagesRepository) GetAll(ctx context.Context) (languages []Language,
 		QueryContext(ctx)
 
 	if err != nil {
-		return nil, fmtError("execute select query", err)
+		return nil, fmt.Errorf("execute select query error: %w", err)
 	}
 
 	defer rows.Close()
@@ -31,7 +26,6 @@ func (r *LanguagesRepository) GetAll(ctx context.Context) (languages []Language,
 
 	for rows.Next() {
 		lang := Language{}
-
 		err = rows.Scan(
 			&lang.Id,
 			&lang.Code,
@@ -39,16 +33,14 @@ func (r *LanguagesRepository) GetAll(ctx context.Context) (languages []Language,
 			&lang.NativeName,
 			&lang.Domain,
 		)
-
 		if err != nil {
-			return nil, fmtError("scan row", err)
+			return nil, fmt.Errorf("scan row error: %w", err)
 		}
-
 		languages = append(languages, lang)
 	}
 
 	if err != nil {
-		return nil, fmtError("execute select query", err)
+		return nil, fmt.Errorf("execute select query error: %w", err)
 	}
 
 	return

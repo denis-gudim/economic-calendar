@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/denis-gudim/economic-calendar/api"
 	v1_controllers "github.com/denis-gudim/economic-calendar/api/v1/controllers"
 	v1_data "github.com/denis-gudim/economic-calendar/api/v1/data"
@@ -9,7 +11,6 @@ import (
 	_ "github.com/lib/pq"
 	"go.uber.org/dig"
 	"go.uber.org/zap"
-	"golang.org/x/xerrors"
 )
 
 type CompositionRoot struct {
@@ -23,19 +24,19 @@ func NewCompositionRoot() (*CompositionRoot, error) {
 	cnf := api.Config{}
 
 	if err := cnf.Load(); err != nil {
-		return nil, xerrors.Errorf("load app.Config error: %w", err)
+		return nil, fmt.Errorf("load application config error: %w", err)
 	}
 
 	logger, err := zap.NewProduction()
 
 	if err != nil {
-		return nil, xerrors.Errorf("init logger error: %w", err)
+		return nil, fmt.Errorf("logger initialization error: %w", err)
 	}
 
 	db, err := sqlx.Connect("postgres", cnf.DB.ConnectionString)
 
 	if err != nil {
-		return nil, xerrors.Errorf("connect to db error: %w", err)
+		return nil, fmt.Errorf("connect to db error: %w", err)
 	}
 
 	container.Provide(func() *api.Config {
@@ -79,7 +80,7 @@ func (r *CompositionRoot) InitHttpServer(gin *gin.Engine) error {
 	})
 
 	if err != nil {
-		return xerrors.Errorf("countries controller error: %w", err)
+		return fmt.Errorf("countries controller init error: %w", err)
 	}
 
 	err = r.container.Invoke(func(c *v1_controllers.EventsController) {
@@ -91,7 +92,7 @@ func (r *CompositionRoot) InitHttpServer(gin *gin.Engine) error {
 	})
 
 	if err != nil {
-		return xerrors.Errorf("events controller error: %w", err)
+		return fmt.Errorf("events controller init error: %w", err)
 	}
 
 	err = r.container.Invoke(func(c *Healtz) {
@@ -99,7 +100,7 @@ func (r *CompositionRoot) InitHttpServer(gin *gin.Engine) error {
 	})
 
 	if err != nil {
-		return xerrors.Errorf("healtz controller error: %w", err)
+		return fmt.Errorf("healtz controller init error: %w", err)
 	}
 
 	return nil

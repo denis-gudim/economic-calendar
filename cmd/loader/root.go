@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"net/http"
 
 	"github.com/denis-gudim/economic-calendar/loader"
@@ -13,7 +14,6 @@ import (
 	_ "github.com/lib/pq"
 	"github.com/sirupsen/logrus"
 	"go.uber.org/dig"
-	"golang.org/x/xerrors"
 )
 
 type CompositionRoot struct {
@@ -25,19 +25,18 @@ type CompositionRoot struct {
 
 func NewCompositionRoot() (*CompositionRoot, error) {
 	container := dig.New()
-	cnf := &loader.Config{}
 
+	cnf := &loader.Config{}
 	if err := cnf.Load(); err != nil {
-		return nil, xerrors.Errorf("load config error: %w", err)
+		return nil, fmt.Errorf("load config error: %w", err)
 	}
 
 	logger := logrus.StandardLogger()
 	logger.SetLevel(cnf.Logging.Level)
 
 	db, err := sql.Open("postgres", cnf.DB.ConnectionString)
-
 	if err != nil {
-		return nil, xerrors.Errorf("connect to db error: %w", err)
+		return nil, fmt.Errorf("connect to database error: %w", err)
 	}
 
 	container.Provide(func() *loader.Config {
@@ -110,9 +109,8 @@ func (r *CompositionRoot) InitSchedule(ctx context.Context, s *gocron.Scheduler)
 
 		return err
 	})
-
 	if err != nil {
-		return xerrors.Errorf("history job scheduling error: %w", err)
+		return fmt.Errorf("history job scheduling error: %w", err)
 	}
 
 	err = r.container.Invoke(func(cnf *loader.Config) error {
@@ -124,9 +122,8 @@ func (r *CompositionRoot) InitSchedule(ctx context.Context, s *gocron.Scheduler)
 
 		return err
 	})
-
 	if err != nil {
-		return xerrors.Errorf("refresh job scheduling error: %w", err)
+		return fmt.Errorf("refresh job scheduling error: %w", err)
 	}
 
 	return nil
@@ -136,10 +133,8 @@ func (r *CompositionRoot) InitHttpServer() error {
 	err := r.container.Invoke(func(h *Healtz) {
 		http.Handle("/healtz", h)
 	})
-
 	if err != nil {
-		return xerrors.Errorf("health check handler error: %w", err)
+		return fmt.Errorf("health check handler error: %w", err)
 	}
-
 	return nil
 }

@@ -2,12 +2,12 @@ package loading
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/denis-gudim/economic-calendar/loader"
 	"github.com/denis-gudim/economic-calendar/loader/data"
 
 	log "github.com/sirupsen/logrus"
-	"golang.org/x/xerrors"
 )
 
 type DictionariesLoaderService struct {
@@ -33,7 +33,7 @@ func NewDictionariesLoaderService(cnf *loader.Config,
 func (s *DictionariesLoaderService) Load(ctx context.Context) error {
 
 	fmtError := func(err error) error {
-		return xerrors.Errorf("countries dictionary loading failed: %w", err)
+		return fmt.Errorf("countries dictionary loading failed: %w", err)
 	}
 
 	s.logger.Info("countries dictionary loading started...")

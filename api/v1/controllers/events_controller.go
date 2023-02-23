@@ -11,7 +11,6 @@ import (
 	"github.com/denis-gudim/economic-calendar/api/v1/data"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
-	"golang.org/x/xerrors"
 )
 
 type EventsDataReciver interface {
@@ -55,7 +54,7 @@ func (h *EventsController) GetEventsSchedule(ctx *gin.Context) {
 	fromDate, err := time.Parse("2006-01-02", from)
 
 	if err != nil {
-		err = xerrors.Errorf("invalid from date value '%s': %w", from, err)
+		err = fmt.Errorf("invalid from date value '%s': %w", from, err)
 		httputil.NewBadRequestError(ctx, err)
 		return
 	}
@@ -63,7 +62,7 @@ func (h *EventsController) GetEventsSchedule(ctx *gin.Context) {
 	toDate, err := time.ParseInLocation("2006-01-02", to, time.UTC)
 
 	if err != nil {
-		err = xerrors.Errorf("invalid to date value '%s': %w", to, err)
+		err = fmt.Errorf("invalid to date value '%s': %w", to, err)
 		httputil.NewBadRequestError(ctx, err)
 		return
 	}
@@ -105,7 +104,7 @@ func (h *EventsController) GetEventDetails(ctx *gin.Context) {
 	eventId, err := strconv.Atoi(id)
 
 	if err != nil {
-		err = xerrors.Errorf("invalid event id value '%s': %w", id, err)
+		err = fmt.Errorf("invalid event id value '%s': %w", id, err)
 		httputil.NewBadRequestError(ctx, err)
 		return
 	}
@@ -149,7 +148,7 @@ func (h *EventsController) GetEventHistory(ctx *gin.Context) {
 	eventId, err := strconv.Atoi(id)
 
 	if err != nil {
-		err = xerrors.Errorf("invalid event id value '%s': %w", id, err)
+		err = fmt.Errorf("invalid event id value '%s': %w", id, err)
 		httputil.NewBadRequestError(ctx, err)
 		return
 	}

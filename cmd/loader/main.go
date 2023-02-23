@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
@@ -11,39 +12,30 @@ import (
 	"github.com/denis-gudim/economic-calendar/loader/loading"
 	"github.com/go-co-op/gocron"
 	log "github.com/sirupsen/logrus"
-	"golang.org/x/xerrors"
 )
 
 func main() {
-
 	root, err := NewCompositionRoot()
-
 	if err != nil {
-		err = xerrors.Errorf("build composition root failed: %w", err)
+		err = fmt.Errorf("build application composition root failed: %w", err)
 		processError(err)
 	}
+	defer root.Close()
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
 	container := root.GetContainer()
-
-	defer root.Close()
-
 	err = container.Invoke(func(s *loading.DictionariesLoaderService) error {
 		return s.Load(ctx)
 	})
-
 	if err != nil {
 		processError(err)
 	}
 
 	s := gocron.NewScheduler(time.UTC)
-
-	err = root.InitSchedule(ctx, s)
-
-	if err != nil {
-		err = xerrors.Errorf("init scheduler failed: %w", err)
+	if err = root.InitSchedule(ctx, s); err != nil {
+		err = fmt.Errorf("init task scheduler failed: %w", err)
 		processError(err)
 	}
 
@@ -51,11 +43,8 @@ func main() {
 		Addr:    ":8080",
 		Handler: http.DefaultServeMux,
 	}
-
-	err = root.InitHttpServer()
-
-	if err != nil {
-		err = xerrors.Errorf("init http server failed: %w", err)
+	if err = root.InitHttpServer(); err != nil {
+		err = fmt.Errorf("init http server failed: %w", err)
 		processError(err)
 	}
 
@@ -65,7 +54,7 @@ func main() {
 
 	go func() {
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			err = xerrors.Errorf("listen http server failed: %w", err)
+			err = fmt.Errorf("listen http server failed: %w", err)
 			processError(err)
 		}
 	}()
@@ -84,7 +73,7 @@ func main() {
 	defer cancel()
 
 	if err := srv.Shutdown(ctx); err != nil {
-		err = xerrors.Errorf("server forced to shutdown: %w", err)
+		err = fmt.Errorf("http server forced to shutdown: %w", err)
 		processError(err)
 	}
 }

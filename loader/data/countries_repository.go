@@ -3,9 +3,9 @@ package data
 import (
 	"context"
 	"database/sql"
+	"fmt"
 
 	sq "github.com/Masterminds/squirrel"
-	"golang.org/x/xerrors"
 )
 
 type CountriesRepository struct {
@@ -19,12 +19,7 @@ func NewCountriesRepository(db *sql.DB) *CountriesRepository {
 }
 
 func (r *CountriesRepository) GetAll(ctx context.Context) (countries []Country, err error) {
-
-	fmtError := func(msg string, err error) error {
-		return xerrors.Errorf("get all countries failed: %s: %w", msg, err)
-	}
 	countries = make([]Country, 0, 100)
-
 	rows, err := r.initQueryBuilder().
 		Select("c.*, ct.language_id, ct.title").
 		From("countries c").
@@ -32,11 +27,9 @@ func (r *CountriesRepository) GetAll(ctx context.Context) (countries []Country, 
 		OrderBy("c.id").
 		RunWith(r.db).
 		QueryContext(ctx)
-
 	if err != nil {
-		return nil, fmtError("execute select query", err)
+		return nil, fmt.Errorf("execute select query error: %w", err)
 	}
-
 	defer rows.Close()
 
 	var (
@@ -57,18 +50,15 @@ func (r *CountriesRepository) GetAll(ctx context.Context) (countries []Country, 
 			&langId,
 			&langTitle,
 		)
-
 		if err != nil {
-			return nil, fmtError("scan row", err)
+			return nil, fmt.Errorf("scan row error: %w", err)
 		}
-
 		if curr.Id != prevId {
 			trans = Translations{}
 			curr.NameTranslations = trans
 			countries = append(countries, curr)
 			prevId = curr.Id
 		}
-
 		if langId != nil {
 			trans[*langId] = *langTitle
 		}
@@ -78,17 +68,10 @@ func (r *CountriesRepository) GetAll(ctx context.Context) (countries []Country, 
 }
 
 func (r *CountriesRepository) Save(ctx context.Context, c Country) error {
-
-	fmtError := func(msg string, err error) error {
-		return xerrors.Errorf("save country failed: %s: %w", msg, err)
-	}
-
 	tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelRepeatableRead})
-
 	if err != nil {
-		return fmtError("create db transaction", err)
+		return fmt.Errorf("create db transaction error: %w", err)
 	}
-
 	defer func() {
 		if tx != nil && err != nil {
 			tx.Rollback()
@@ -108,9 +91,8 @@ func (r *CountriesRepository) Save(ctx context.Context, c Country) error {
 				Set("name", c.Name))
 
 	_, err = upsertQuery.RunWith(tx).ExecContext(ctx)
-
 	if err != nil {
-		return fmtError("execute upsert country query", err)
+		return fmt.Errorf("execute upsert query error: %w", err)
 	}
 
 	deleteQuery := r.initQueryBuilder().
@@ -118,9 +100,8 @@ func (r *CountriesRepository) Save(ctx context.Context, c Country) error {
 		Where(sq.Eq{"country_id": c.Id})
 
 	_, err = deleteQuery.RunWith(tx).ExecContext(ctx)
-
 	if err != nil {
-		return fmtError("execute delete country translations query", err)
+		return fmt.Errorf("delete translations query error: %w", err)
 	}
 
 	for langId, title := range c.NameTranslations {
@@ -133,14 +114,12 @@ func (r *CountriesRepository) Save(ctx context.Context, c Country) error {
 		_, err = insertQuery.RunWith(tx).ExecContext(ctx)
 
 		if err != nil {
-			return fmtError("execute insert country translation query", err)
+			return fmt.Errorf("execute insert translation query error: %w", err)
 		}
 	}
 
-	err = tx.Commit()
-
-	if err != nil {
-		return fmtError("commit transaction", err)
+	if err = tx.Commit(); err != nil {
+		return fmt.Errorf("commit transaction: %w", err)
 	}
 
 	return nil

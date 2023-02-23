@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -13,7 +14,6 @@ import (
 	//ginSwagger "github.com/swaggo/gin-swagger"
 	// "github.com/swaggo/gin-swagger/swaggerFiles"
 	ginprometheus "github.com/zsais/go-gin-prometheus"
-	"golang.org/x/xerrors"
 
 	_ "github.com/denis-gudim/economic-calendar/api/docs"
 )
@@ -31,16 +31,12 @@ import (
 
 // @BasePath /v1/
 func main() {
-
 	root, err := NewCompositionRoot()
-
 	if err != nil {
-		err = xerrors.Errorf("build composition root failed: %w", err)
+		err = fmt.Errorf("build composition root failed: %w", err)
 		processError(err)
 	}
-
 	defer root.Close()
-
 	startHttpServer(root)
 }
 
@@ -48,7 +44,7 @@ func startHttpServer(root *CompositionRoot) {
 	router := gin.Default()
 
 	if err := root.InitHttpServer(router); err != nil {
-		err = xerrors.Errorf("init http server failed: %w", err)
+		err = fmt.Errorf("init http server failed: %w", err)
 		processError(err)
 	}
 
@@ -67,7 +63,7 @@ func startHttpServer(root *CompositionRoot) {
 
 	go func() {
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			err = xerrors.Errorf("listen http server failed: %w", err)
+			err = fmt.Errorf("listen http server failed: %w", err)
 			processError(err)
 		}
 	}()
@@ -82,7 +78,7 @@ func startHttpServer(root *CompositionRoot) {
 	defer cancel()
 
 	if err := srv.Shutdown(ctx); err != nil {
-		err = xerrors.Errorf("server forced to shutdown: %w", err)
+		err = fmt.Errorf("server forced to shutdown: %w", err)
 		processError(err)
 	}
 }

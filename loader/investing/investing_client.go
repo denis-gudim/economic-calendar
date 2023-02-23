@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/denis-gudim/economic-calendar/loader"
-	"golang.org/x/xerrors"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/google/uuid"
@@ -119,7 +118,7 @@ func (client *InvestingHttpClient) doRetryRequest(ctx context.Context, method, u
 	for i := 0; i < client.RetryCount; i++ {
 		select {
 		case <-ctx.Done():
-			return nil, xerrors.Errorf("do retry request canceled")
+			return nil, fmt.Errorf("do retry request canceled")
 		default:
 			{
 				reader, err = client.doRequest(ctx, method, url, headers, body)

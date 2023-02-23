@@ -2,10 +2,10 @@ package data
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/jmoiron/sqlx"
-	"golang.org/x/xerrors"
 )
 
 type EventsRepository struct {
@@ -17,10 +17,7 @@ func NewEventsRepository(db *sqlx.DB) *EventsRepository {
 }
 
 func (r *EventsRepository) GetScheduleByDates(ctx context.Context, from, to time.Time, langCode string) ([]Event, error) {
-	const errFormat = "get schedule by dates failed: %s: %w"
-
 	rows := make([]Event, 0, 128)
-
 	err := r.Db.SelectContext(ctx, &rows,
 		`SELECT es.id, es.event_id, es.type, e.impact_level, c.code, es.timestamp_utc, est.title, es.actual, es.forecast, es.previous, e.unit
 		 FROM event_schedule AS es JOIN events AS e 
@@ -30,19 +27,14 @@ func (r *EventsRepository) GetScheduleByDates(ctx context.Context, from, to time
 		 ON l.id = est.language_id and l.code = $1
 		 WHERE es.timestamp_utc >= $2::timestamp AND es.timestamp_utc < $3::timestamp
 		 ORDER BY es.timestamp_utc DESC`, langCode, from, to)
-
 	if err != nil {
-		return nil, xerrors.Errorf(errFormat, "execute select query", err)
+		return nil, fmt.Errorf("get schedule by dates error: %w", err)
 	}
-
 	return rows, nil
 }
 
 func (r *EventsRepository) GetEventById(ctx context.Context, eventId int, langCode string) (*EventDetails, error) {
-	const errFormat = "get event by id: %s: %w"
-
 	rows := make([]EventDetails, 0, 1)
-
 	err := r.Db.SelectContext(ctx, &rows,
 		`SELECT es.id, es.event_id, es.type, e.impact_level, c.code, es.timestamp_utc, et.title, es.actual, es.forecast, es.previous, et.overview, e.source, e.source_url, e.unit
 		 FROM event_schedule AS es JOIN events AS e 
@@ -52,33 +44,24 @@ func (r *EventsRepository) GetEventById(ctx context.Context, eventId int, langCo
 		 ON l.id = et.language_id and l.code = $2
 		 ORDER BY es.timestamp_utc DESC
 		 LIMIT 1`, eventId, langCode)
-
 	if err != nil {
-		return nil, xerrors.Errorf(errFormat, "execute select query", err)
+		return nil, fmt.Errorf("get event by id error: %w", err)
 	}
-
 	if len(rows) == 0 {
 		return nil, nil
 	}
-
 	return &rows[0], nil
 }
 
 func (r *EventsRepository) GetHistoryById(ctx context.Context, eventId int) ([]EventRow, error) {
-	const errFormat = "get history by id: %s: %w"
-
 	rows := make([]EventRow, 0, 128)
-
 	err := r.Db.SelectContext(ctx, &rows,
 		`SELECT id, event_id, timestamp_utc, actual, forecast, previous
 		 FROM event_schedule
 		 WHERE event_id = $1
 		 ORDER BY timestamp_utc DESC`, eventId)
-
 	if err != nil {
-		return nil, xerrors.Errorf(errFormat, "execute select query", err)
+		return nil, fmt.Errorf("get history by id error: %w", err)
 	}
-
 	return rows, nil
-
 }

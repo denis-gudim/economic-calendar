@@ -3,9 +3,9 @@ package data
 import (
 	"context"
 	"database/sql"
+	"fmt"
 
 	sq "github.com/Masterminds/squirrel"
-	"golang.org/x/xerrors"
 )
 
 type EventsRepository struct {
@@ -19,9 +19,8 @@ func NewEventsRepository(db *sql.DB) *EventsRepository {
 }
 
 func (r *EventsRepository) GetById(ctx context.Context, id int) (*Event, error) {
-
 	fmtError := func(msg string, err error) error {
-		return xerrors.Errorf("get events by id ( id: %d): %s: %w", id, msg, err)
+		return fmt.Errorf("get events by id ( id: %d): %s: %w", id, msg, err)
 	}
 
 	filter := func(b sq.SelectBuilder) sq.SelectBuilder {
@@ -42,17 +41,14 @@ func (r *EventsRepository) GetById(ctx context.Context, id int) (*Event, error) 
 }
 
 func (r *EventsRepository) Save(ctx context.Context, e Event) error {
-
 	fmtError := func(msg string, err error) error {
-		return xerrors.Errorf("save event failed: %s: %w", msg, err)
+		return fmt.Errorf("save event failed: %s: %w", msg, err)
 	}
 
 	tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelRepeatableRead})
-
 	if err != nil {
 		return fmtError("create db transaction", err)
 	}
-
 	defer func() {
 		if tx != nil && err != nil {
 			tx.Rollback()

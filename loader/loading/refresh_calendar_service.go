@@ -40,7 +40,7 @@ func (s *RefreshCalendarService) Refresh() {
 	// }
 
 	// fmtError := func(msg string, err error) error {
-	// 	return xerrors.Errorf("events schedule refresh failed: %s: %w", msg, err)
+	// 	return fmt.Errorf("events schedule refresh failed: %s: %w", msg, err)
 	// }
 
 	// s.logger.Info("events schedule refresh started...")

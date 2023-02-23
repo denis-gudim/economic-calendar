@@ -1,8 +1,9 @@
 package api
 
 import (
+	"fmt"
+
 	"github.com/spf13/viper"
-	"golang.org/x/xerrors"
 )
 
 type Config struct {
@@ -19,7 +20,7 @@ func (cnf *Config) Load() error {
 	viper.AutomaticEnv()
 
 	if err := viper.ReadInConfig(); err != nil {
-		return xerrors.Errorf("error reading config file: %w", err)
+		return fmt.Errorf("couldn't read configuration file: %w", err)
 	}
 
 	return viper.Unmarshal(cnf)
