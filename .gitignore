@@ -15,4 +15,4 @@
 # vendor/
 .vscode
 
-data/
+_data/

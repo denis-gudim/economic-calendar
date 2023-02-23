@@ -1,0 +1,21 @@
+FROM golang:1.20-alpine3.16 AS build
+
+WORKDIR /src/
+
+COPY . .
+
+RUN go get -d -v ./...
+RUN go build -o ../out/calendar-loader ./cmd/loader/...
+
+FROM alpine:3.16
+
+WORKDIR /opt/app/
+
+RUN apk --update --no-cache add curl
+
+COPY --from=build /out/calendar-loader calendar-loader
+COPY --from=build /src/cmd/loader/config.env config.env
+
+EXPOSE 8080
+
+CMD ["/opt/app/calendar-loader"]

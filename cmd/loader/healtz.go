@@ -1,30 +1,33 @@
-package app
+package main
 
 import (
+	"database/sql"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
 
-	"github.com/gin-gonic/gin"
-	"github.com/jmoiron/sqlx"
+	"github.com/sirupsen/logrus"
+	"golang.org/x/xerrors"
 )
 
 type Healtz struct {
-	db     *sqlx.DB
-	checks map[string]func(ctx *gin.Context) (interface{}, error)
+	db     *sql.DB
+	logger *logrus.Logger
+	checks map[string]func(req *http.Request) (interface{}, error)
 }
 
-func NewHealtz(db *sqlx.DB) *Healtz {
-	h := Healtz{db: db}
+func NewHealtz(db *sql.DB, logger *logrus.Logger) *Healtz {
+	h := Healtz{db: db, logger: logger}
 
-	h.checks = map[string]func(ctx *gin.Context) (interface{}, error){
+	h.checks = map[string]func(req *http.Request) (interface{}, error){
 		"db": h.checkDB,
 	}
 
 	return &h
 }
 
-func (h *Healtz) Handle(ctx *gin.Context) {
+func (h *Healtz) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	out := struct {
 		Status   string                 `json:"status"`
 		Duration string                 `json:"duration"`
@@ -39,10 +42,11 @@ func (h *Healtz) Handle(ctx *gin.Context) {
 	start := time.Now()
 
 	for k, v := range h.checks {
-		res, err := v(ctx)
+		res, err := v(req)
 
 		if err != nil {
 			failed++
+			h.logger.Error(err)
 		}
 
 		out.Items[k] = res
@@ -53,14 +57,17 @@ func (h *Healtz) Handle(ctx *gin.Context) {
 
 	if failed > 0 {
 		out.Status = "DOWN"
-		ctx.JSON(http.StatusServiceUnavailable, out)
-		return
+		w.WriteHeader(http.StatusServiceUnavailable)
+	} else {
+		w.WriteHeader(http.StatusOK)
+		h.logger.WithField("duration", out.Duration).Info("healthcheck complete successfully")
 	}
 
-	ctx.JSON(http.StatusOK, out)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(out)
 }
 
-func (h *Healtz) checkDB(ctx *gin.Context) (interface{}, error) {
+func (h *Healtz) checkDB(req *http.Request) (interface{}, error) {
 	out := struct {
 		Status   string      `json:"status"`
 		Result   interface{} `json:"result"`
@@ -72,7 +79,9 @@ func (h *Healtz) checkDB(ctx *gin.Context) (interface{}, error) {
 	count := 0
 	start := time.Now()
 
-	err := h.db.GetContext(ctx, &count, "SELECT COUNT(*) FROM countries")
+	row := h.db.QueryRowContext(req.Context(), "SELECT COUNT(*) FROM countries")
+
+	err := row.Scan(&count)
 
 	out.Duration = time.Since(start).String()
 	out.Result = count
@@ -84,6 +93,7 @@ func (h *Healtz) checkDB(ctx *gin.Context) (interface{}, error) {
 	if err != nil {
 		out.Status = "DOWN"
 		out.Result = err.Error()
+		err = xerrors.Errorf("db healthcheck err: %w", err)
 	}
 
 	return out, err

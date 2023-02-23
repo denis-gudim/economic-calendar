@@ -1,8 +1,7 @@
 package loading
 
 import (
-	"github.com/denis-gudim/economic-calendar/loader/app"
-
+	"github.com/denis-gudim/economic-calendar/loader"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -10,10 +9,10 @@ type RefreshCalendarService struct {
 	investingRepository     InvestingDataReciver
 	eventScheduleRepository EventScheduleDataReciver
 	logger                  *log.Logger
-	config                  *app.Config
+	config                  *loader.Config
 }
 
-func NewRefreshCalendarService(cnf *app.Config,
+func NewRefreshCalendarService(cnf *loader.Config,
 	logger *log.Logger,
 	investingRepository InvestingDataReciver,
 	eventScheduleRepository EventScheduleDataReciver) *RefreshCalendarService {

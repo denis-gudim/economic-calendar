@@ -3,17 +3,17 @@ version: "3.9"
 services:
   
   db:
-      image: postgres:14.0-alpine3.14
+      image: postgres:15.2-alpine
       container_name: calendar-db
       environment:
         - POSTGRES_USER=root
         - POSTGRES_PASSWORD=p@ssw0rd
         - POSTGRES_DB=calendar
       ports:
-        - 5433:5432
+        - 15432:5432
       volumes:
-        - ./data:/var/lib/postgresql/data
-        - ./src/db:/docker-entrypoint-initdb.d
+        - ./build/_data:/var/lib/postgresql/data
+        - ./db:/docker-entrypoint-initdb.d
       healthcheck:
         test: ["CMD-SHELL", "pg_isready -d calendar -U calendar_ldr_svc"]
         interval: 10s
@@ -21,7 +21,9 @@ services:
         retries: 5
 
   loader:
-      build: ./src/loader/.
+      build: 
+        context: .
+        dockerfile: build/Dockerfile_Loader
       container_name: calendar-loader
       environment:
         - DB_CONSTR=host=db port=5432 dbname=calendar user=calendar_ldr_svc password=ju8Cie0c sslmode=disable
@@ -48,7 +50,9 @@ services:
         retries: 3
   
   api:
-      build: ./src/api/.
+      build: 
+        context: .
+        dockerfile: build/Dockerfile_API
       container_name: calendar-api
       environment:
         - GIN_MODE=release

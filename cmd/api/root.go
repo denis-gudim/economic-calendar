@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/denis-gudim/economic-calendar/api/app"
+	"github.com/denis-gudim/economic-calendar/api"
 	v1_controllers "github.com/denis-gudim/economic-calendar/api/v1/controllers"
 	v1_data "github.com/denis-gudim/economic-calendar/api/v1/data"
 	"github.com/gin-gonic/gin"
@@ -20,7 +20,7 @@ type CompositionRoot struct {
 
 func NewCompositionRoot() (*CompositionRoot, error) {
 	container := dig.New()
-	cnf := app.Config{}
+	cnf := api.Config{}
 
 	if err := cnf.Load(); err != nil {
 		return nil, xerrors.Errorf("load app.Config error: %w", err)
@@ -38,7 +38,7 @@ func NewCompositionRoot() (*CompositionRoot, error) {
 		return nil, xerrors.Errorf("connect to db error: %w", err)
 	}
 
-	container.Provide(func() *app.Config {
+	container.Provide(func() *api.Config {
 		return &cnf
 	})
 
@@ -60,7 +60,7 @@ func NewCompositionRoot() (*CompositionRoot, error) {
 	container.Provide(v1_controllers.NewCountriesController)
 	container.Provide(v1_controllers.NewEventsController)
 
-	container.Provide(app.NewHealtz)
+	container.Provide(NewHealtz)
 
 	return &CompositionRoot{
 		db:        db,
@@ -94,7 +94,7 @@ func (r *CompositionRoot) InitHttpServer(gin *gin.Engine) error {
 		return xerrors.Errorf("events controller error: %w", err)
 	}
 
-	err = r.container.Invoke(func(c *app.Healtz) {
+	err = r.container.Invoke(func(c *Healtz) {
 		gin.GET("/healtz", c.Handle)
 	})
 

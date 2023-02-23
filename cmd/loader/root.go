@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"net/http"
 
-	"github.com/denis-gudim/economic-calendar/loader/app"
+	"github.com/denis-gudim/economic-calendar/loader"
 	"github.com/denis-gudim/economic-calendar/loader/data"
 	"github.com/denis-gudim/economic-calendar/loader/investing"
 	"github.com/denis-gudim/economic-calendar/loader/loading"
@@ -20,12 +20,12 @@ type CompositionRoot struct {
 	logger    *logrus.Logger
 	db        *sql.DB
 	container *dig.Container
-	cnf       *app.Config
+	cnf       *loader.Config
 }
 
 func NewCompositionRoot() (*CompositionRoot, error) {
 	container := dig.New()
-	cnf := &app.Config{}
+	cnf := &loader.Config{}
 
 	if err := cnf.Load(); err != nil {
 		return nil, xerrors.Errorf("load config error: %w", err)
@@ -40,7 +40,7 @@ func NewCompositionRoot() (*CompositionRoot, error) {
 		return nil, xerrors.Errorf("connect to db error: %w", err)
 	}
 
-	container.Provide(func() *app.Config {
+	container.Provide(func() *loader.Config {
 		return cnf
 	})
 
@@ -52,11 +52,11 @@ func NewCompositionRoot() (*CompositionRoot, error) {
 		return db
 	})
 
-	container.Provide(func(c *app.Config) investing.InvestingHtmlSource {
+	container.Provide(func(c *loader.Config) investing.InvestingHtmlSource {
 		return investing.NewInvestingHttpClient(c)
 	})
 
-	container.Provide(func(c *app.Config, logger *logrus.Logger, source investing.InvestingHtmlSource) loading.InvestingDataReciver {
+	container.Provide(func(c *loader.Config, logger *logrus.Logger, source investing.InvestingHtmlSource) loading.InvestingDataReciver {
 		return investing.NewInvestingRepository(c, logger, source)
 	})
 
@@ -80,7 +80,7 @@ func NewCompositionRoot() (*CompositionRoot, error) {
 	container.Provide(loading.NewHistoryLoaderService)
 	container.Provide(loading.NewRefreshCalendarService)
 
-	container.Provide(app.NewHealtz)
+	container.Provide(NewHealtz)
 
 	return &CompositionRoot{
 		db:        db,
@@ -102,7 +102,7 @@ func (r *CompositionRoot) Close() {
 
 func (r *CompositionRoot) InitSchedule(ctx context.Context, s *gocron.Scheduler) error {
 
-	err := r.container.Invoke(func(cnf *app.Config, srv *loading.HistoryLoaderService) error {
+	err := r.container.Invoke(func(cnf *loader.Config, srv *loading.HistoryLoaderService) error {
 		_, err := s.Cron(r.cnf.Scheduler.HistoryExpression).
 			SingletonMode().
 			StartImmediately().
@@ -115,7 +115,7 @@ func (r *CompositionRoot) InitSchedule(ctx context.Context, s *gocron.Scheduler)
 		return xerrors.Errorf("history job scheduling error: %w", err)
 	}
 
-	err = r.container.Invoke(func(cnf *app.Config) error {
+	err = r.container.Invoke(func(cnf *loader.Config) error {
 		_, err = s.Cron(r.cnf.Scheduler.RefreshExpression).
 			SingletonMode().
 			Do(func() {
@@ -133,7 +133,7 @@ func (r *CompositionRoot) InitSchedule(ctx context.Context, s *gocron.Scheduler)
 }
 
 func (r *CompositionRoot) InitHttpServer() error {
-	err := r.container.Invoke(func(h *app.Healtz) {
+	err := r.container.Invoke(func(h *Healtz) {
 		http.Handle("/healtz", h)
 	})
 

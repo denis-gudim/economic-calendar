@@ -3,7 +3,7 @@ package loading
 import (
 	"time"
 
-	"github.com/denis-gudim/economic-calendar/loader/app"
+	"github.com/denis-gudim/economic-calendar/loader"
 	"github.com/denis-gudim/economic-calendar/loader/data"
 
 	log "github.com/sirupsen/logrus"
@@ -19,11 +19,11 @@ type HistoryLoaderService struct {
 	eventsRepository        EventsDataReciver
 	eventScheduleRepository EventScheduleDataReciver
 	logger                  *log.Logger
-	config                  *app.Config
+	config                  *loader.Config
 	countriesMap            map[string]int
 }
 
-func NewHistoryLoaderService(cnf *app.Config,
+func NewHistoryLoaderService(cnf *loader.Config,
 	logger *log.Logger,
 	investingRepository InvestingDataReciver,
 	countriesRepository CountriesDataReciver,

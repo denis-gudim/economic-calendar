@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/denis-gudim/economic-calendar/loader/app"
+	"github.com/denis-gudim/economic-calendar/loader"
 	"golang.org/x/xerrors"
 
 	"github.com/PuerkitoBio/goquery"
@@ -23,7 +23,7 @@ type InvestingHttpClient struct {
 	RetryCount int
 }
 
-func NewInvestingHttpClient(cnf *app.Config) *InvestingHttpClient {
+func NewInvestingHttpClient(cnf *loader.Config) *InvestingHttpClient {
 	return &InvestingHttpClient{
 		RetryCount: cnf.Loading.RetryCount,
 	}

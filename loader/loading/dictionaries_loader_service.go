@@ -3,7 +3,7 @@ package loading
 import (
 	"context"
 
-	"github.com/denis-gudim/economic-calendar/loader/app"
+	"github.com/denis-gudim/economic-calendar/loader"
 	"github.com/denis-gudim/economic-calendar/loader/data"
 
 	log "github.com/sirupsen/logrus"
@@ -14,10 +14,10 @@ type DictionariesLoaderService struct {
 	investingRepository InvestingDataReciver
 	countriesRepository CountriesDataReciver
 	logger              *log.Logger
-	config              *app.Config
+	config              *loader.Config
 }
 
-func NewDictionariesLoaderService(cnf *app.Config,
+func NewDictionariesLoaderService(cnf *loader.Config,
 	logger *log.Logger,
 	investingRepository InvestingDataReciver,
 	countriesRepository CountriesDataReciver) *DictionariesLoaderService {
