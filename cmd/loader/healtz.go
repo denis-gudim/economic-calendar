@@ -63,7 +63,9 @@ func (h *Healtz) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(out)
+	if err := json.NewEncoder(w).Encode(out); err != nil {
+		h.logger.Error(err)
+	}
 }
 
 func (h *Healtz) checkDB(req *http.Request) (interface{}, error) {

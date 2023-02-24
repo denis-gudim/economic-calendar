@@ -28,40 +28,57 @@ func NewCompositionRoot() (*CompositionRoot, error) {
 	}
 
 	logger, err := zap.NewProduction()
-
 	if err != nil {
 		return nil, fmt.Errorf("logger initialization error: %w", err)
 	}
 
 	db, err := sqlx.Connect("postgres", cnf.DB.ConnectionString)
-
 	if err != nil {
 		return nil, fmt.Errorf("connect to db error: %w", err)
 	}
 
-	container.Provide(func() *api.Config {
+	err = container.Provide(func() *api.Config {
 		return &cnf
 	})
-
-	container.Provide(func() *zap.Logger {
+	if err != nil {
+		return nil, err
+	}
+	err = container.Provide(func() *zap.Logger {
 		return logger
 	})
-
-	container.Provide(func() *sqlx.DB {
+	if err != nil {
+		return nil, err
+	}
+	err = container.Provide(func() *sqlx.DB {
 		return db
 	})
-
-	container.Provide(func(db *sqlx.DB) v1_controllers.CountriesDataReciver {
+	if err != nil {
+		return nil, err
+	}
+	err = container.Provide(func(db *sqlx.DB) v1_controllers.CountriesDataReciver {
 		return v1_data.NewCountriesRepository(db)
 	})
-	container.Provide(func(db *sqlx.DB) v1_controllers.EventsDataReciver {
+	if err != nil {
+		return nil, err
+	}
+	err = container.Provide(func(db *sqlx.DB) v1_controllers.EventsDataReciver {
 		return v1_data.NewEventsRepository(db)
 	})
-
-	container.Provide(v1_controllers.NewCountriesController)
-	container.Provide(v1_controllers.NewEventsController)
-
-	container.Provide(NewHealtz)
+	if err != nil {
+		return nil, err
+	}
+	err = container.Provide(v1_controllers.NewCountriesController)
+	if err != nil {
+		return nil, err
+	}
+	err = container.Provide(v1_controllers.NewEventsController)
+	if err != nil {
+		return nil, err
+	}
+	err = container.Provide(NewHealtz)
+	if err != nil {
+		return nil, err
+	}
 
 	return &CompositionRoot{
 		db:        db,
@@ -109,7 +126,9 @@ func (r *CompositionRoot) InitHttpServer(gin *gin.Engine) error {
 func (r *CompositionRoot) Close() {
 	defer func() {
 		if r.logger != nil {
-			r.logger.Sync()
+			if err := r.logger.Sync(); err != nil {
+				fmt.Println(err)
+			}
 		}
 	}()
 

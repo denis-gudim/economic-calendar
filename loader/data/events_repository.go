@@ -51,7 +51,9 @@ func (r *EventsRepository) Save(ctx context.Context, e Event) error {
 	}
 	defer func() {
 		if tx != nil && err != nil {
-			tx.Rollback()
+			if rerr := tx.Rollback(); rerr != nil {
+				err = rerr
+			}
 		}
 	}()
 

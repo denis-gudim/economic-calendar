@@ -39,47 +39,76 @@ func NewCompositionRoot() (*CompositionRoot, error) {
 		return nil, fmt.Errorf("connect to database error: %w", err)
 	}
 
-	container.Provide(func() *loader.Config {
+	err = container.Provide(func() *loader.Config {
 		return cnf
 	})
-
-	container.Provide(func() *logrus.Logger {
+	if err != nil {
+		return nil, err
+	}
+	err = container.Provide(func() *logrus.Logger {
 		return logger
 	})
-
-	container.Provide(func() *sql.DB {
+	if err != nil {
+		return nil, err
+	}
+	err = container.Provide(func() *sql.DB {
 		return db
 	})
-
-	container.Provide(func(c *loader.Config) investing.InvestingHtmlSource {
+	if err != nil {
+		return nil, err
+	}
+	err = container.Provide(func(c *loader.Config) investing.InvestingHtmlSource {
 		return investing.NewInvestingHttpClient(c)
 	})
-
-	container.Provide(func(c *loader.Config, logger *logrus.Logger, source investing.InvestingHtmlSource) loading.InvestingDataReciver {
+	if err != nil {
+		return nil, err
+	}
+	err = container.Provide(func(c *loader.Config, logger *logrus.Logger, source investing.InvestingHtmlSource) loading.InvestingDataReciver {
 		return investing.NewInvestingRepository(c, logger, source)
 	})
-
-	container.Provide(func(db *sql.DB) loading.CountriesDataReciver {
+	if err != nil {
+		return nil, err
+	}
+	err = container.Provide(func(db *sql.DB) loading.CountriesDataReciver {
 		return data.NewCountriesRepository(db)
 	})
-
-	container.Provide(func(db *sql.DB) loading.EventScheduleDataReciver {
+	if err != nil {
+		return nil, err
+	}
+	err = container.Provide(func(db *sql.DB) loading.EventScheduleDataReciver {
 		return data.NewEventScheduleRepository(db)
 	})
-
-	container.Provide(func(db *sql.DB) loading.EventsDataReciver {
+	if err != nil {
+		return nil, err
+	}
+	err = container.Provide(func(db *sql.DB) loading.EventsDataReciver {
 		return data.NewEventsRepository(db)
 	})
-
-	container.Provide(func(db *sql.DB) loading.EventsDataReciver {
+	if err != nil {
+		return nil, err
+	}
+	err = container.Provide(func(db *sql.DB) loading.EventsDataReciver {
 		return data.NewEventsRepository(db)
 	})
-
-	container.Provide(loading.NewDictionariesLoaderService)
-	container.Provide(loading.NewHistoryLoaderService)
-	container.Provide(loading.NewRefreshCalendarService)
-
-	container.Provide(NewHealtz)
+	if err != nil {
+		return nil, err
+	}
+	err = container.Provide(loading.NewDictionariesLoaderService)
+	if err != nil {
+		return nil, err
+	}
+	err = container.Provide(loading.NewHistoryLoaderService)
+	if err != nil {
+		return nil, err
+	}
+	err = container.Provide(loading.NewRefreshCalendarService)
+	if err != nil {
+		return nil, err
+	}
+	err = container.Provide(NewHealtz)
+	if err != nil {
+		return nil, err
+	}
 
 	return &CompositionRoot{
 		db:        db,

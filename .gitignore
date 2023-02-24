@@ -15,4 +15,5 @@
 # vendor/
 .vscode
 
-_data/
+build/_data/
+build/bin/
