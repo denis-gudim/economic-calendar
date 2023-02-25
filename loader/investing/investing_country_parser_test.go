@@ -2,6 +2,7 @@ package investing
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -28,22 +29,22 @@ func Test_InvestingCountryParser_ParseCountryHtml(t *testing.T) {
 		{
 			html:           `<li><label>Text</label></li>`,
 			expectedResult: nil,
-			err:            &ParsingError{},
+			err:            fmt.Errorf("invalid html missed value attribute or input tag"),
 		},
 		{
 			html:           `<li><input><label>Text</label></li>`,
 			expectedResult: nil,
-			err:            &ParsingError{},
+			err:            fmt.Errorf("invalid html missed value attribute or input tag"),
 		},
 		{
 			html:           `<li><input value="abc"><label>Text</label></li>`,
 			expectedResult: nil,
-			err:            &ParsingError{},
+			err:            &strconv.NumError{Func: "Atoi", Num: "abc", Err: strconv.ErrSyntax},
 		},
 		{
 			html:           `<li><input value="123"></li>`,
 			expectedResult: nil,
-			err:            &ParsingError{},
+			err:            fmt.Errorf("invalid html missed text or label tag"),
 		},
 	}
 
@@ -57,7 +58,7 @@ func Test_InvestingCountryParser_ParseCountryHtml(t *testing.T) {
 		actualResult, err := parser.parseCountryHtml(html.Find("li"))
 
 		// Assert
-		assert.IsType(t, test.err, err)
+		assert.Equal(t, test.err, err)
 		assert.Equal(t, test.expectedResult, actualResult)
 	}
 }
@@ -83,12 +84,12 @@ func Test_InvestingCountryParser_ParseCountriesHtml(t *testing.T) {
 		{
 			html:           `<div></div>`,
 			expectedResult: nil,
-			err:            &ParsingError{},
+			err:            fmt.Errorf("couldn't find country tags into html"),
 		},
 		{
 			html:           ``,
 			expectedResult: nil,
-			err:            &ParsingError{},
+			err:            fmt.Errorf("argument html value is nil"),
 		},
 	}
 
@@ -118,7 +119,7 @@ func Test_InvestingCountryParser_ParseCountriesHtml(t *testing.T) {
 		actualResult, err := parser.ParseCountriesHtml(htmlDoc)
 
 		// Assert
-		assert.IsType(t, test.err, err)
+		assert.Equal(t, test.err, err)
 		assert.Equal(t, test.expectedResult, actualResult)
 	}
 }

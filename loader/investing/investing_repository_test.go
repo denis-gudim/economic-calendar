@@ -73,8 +73,18 @@ func (m *InvestingHtmlSourceMock) LoadEventDetailsHtml(ctx context.Context, even
 		<div id="overViewBox" class="overViewBox event">
 			<div class="left">The University of Michigan Consumer Sentiment Index.   </div>
 			<div class="right">
-				<div></div>
-				<div></div>
+				<div>
+					<span>Importance:</span>
+					<span><i class="grayFullBullishIcon"></i><i class="grayFullBullishIcon"></i><i class="grayEmptyBullishIcon"></i></span>
+				</div>
+				<div>
+					<span>Country:</span>
+					<span><i title="New Zealand" class="ceFlags New_Zealand middle inlineblock"></i></span>
+				</div>
+				<div>
+					<span>Currency:</span>
+					<span>NZD</span>
+				</div>
 				<div>
 					<span>Source:</span>
 					<span><a href="http://thomsonreuters.com/en/products-services/financial/investment-management.html" target="_blank" title="University of Michigan">University of Michigan</a></span>
@@ -164,7 +174,7 @@ func Test_InvestingRepository_getEventDetailsByLanguage(t *testing.T) {
 	// Assert
 	source.AssertExpectations(t)
 	assert.Nil(t, err)
-	assert.Equal(t, 1, len(actualResult))
+	assert.Len(t, actualResult, 1)
 	assert.Equal(t, languageId, actualResult[0].GetLanguageId())
 }
 

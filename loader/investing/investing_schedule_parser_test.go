@@ -1,6 +1,7 @@
 package investing
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -60,7 +61,7 @@ func Test_InvestingScheduleParser_ParseScheduleRowHtml(t *testing.T) {
 		actualResult, err := parser.parseScheduleRowHtml(selector)
 
 		// Assert
-		assert.IsType(t, test.err, err)
+		assert.Equal(t, test.err, err)
 		assert.Equal(t, test.expectedResult, actualResult)
 	}
 }
@@ -79,12 +80,12 @@ func Test_InvestingScheduleParser_ParseScheduleRowId(t *testing.T) {
 		{
 			html:           `<div></div>`,
 			expectedResult: 0,
-			err:            &ParsingError{},
+			err:            fmt.Errorf("parse error"),
 		},
 		{
 			html:           `<div id="rowABC"></div>`,
 			expectedResult: 0,
-			err:            &ParsingError{},
+			err:            fmt.Errorf("parse error"),
 		},
 	}
 
@@ -98,7 +99,7 @@ func Test_InvestingScheduleParser_ParseScheduleRowId(t *testing.T) {
 		actualResult, err := parser.parseScheduleRowId(selector)
 
 		// Assert
-		assert.IsType(t, test.err, err)
+		assert.Equal(t, test.err, err)
 		assert.Equal(t, test.expectedResult, actualResult)
 	}
 }
@@ -117,12 +118,12 @@ func Test_InvestingScheduleParser_ParseScheduleCountryName(t *testing.T) {
 		{
 			html:           `<tr><td><span class="ceFlags"></span></td></tr>`,
 			expectedResult: "",
-			err:            &ParsingError{},
+			err:            fmt.Errorf("parse error"),
 		},
 		{
 			html:           `<tr><td></td><td></td><td></td></tr>`,
 			expectedResult: "",
-			err:            &ParsingError{},
+			err:            fmt.Errorf("parse error"),
 		},
 	}
 
@@ -136,7 +137,7 @@ func Test_InvestingScheduleParser_ParseScheduleCountryName(t *testing.T) {
 		actualResult, err := parser.parseScheduleCountryName(selector)
 
 		// Assert
-		assert.IsType(t, test.err, err)
+		assert.Equal(t, test.err, err)
 		assert.Equal(t, test.expectedResult, actualResult)
 	}
 }
@@ -155,12 +156,12 @@ func Test_InvestingScheduleParser_ParseScheduleTimeStamp(t *testing.T) {
 		{
 			html:           `<div data-event-datetime="abcd"></div>`,
 			expectedResult: time.Time{},
-			err:            &ParsingError{},
+			err:            fmt.Errorf("parse error"),
 		},
 		{
 			html:           `<div></div>`,
 			expectedResult: time.Time{},
-			err:            &ParsingError{},
+			err:            fmt.Errorf("parse error"),
 		},
 	}
 
@@ -237,7 +238,7 @@ func Test_InvestingScheduleParser_ParseScheduleEventType(t *testing.T) {
 						</tr>
 					</table>`,
 			expectedResult: Index,
-			err:            &ParsingError{},
+			err:            fmt.Errorf("parse error"),
 		},
 	}
 
@@ -251,7 +252,7 @@ func Test_InvestingScheduleParser_ParseScheduleEventType(t *testing.T) {
 		actualResult, err := parser.parseScheduleEventType(selector)
 
 		// Assert
-		assert.IsType(t, test.err, err)
+		assert.Equal(t, test.err, err)
 		assert.Equal(t, test.expectedResult, actualResult)
 	}
 }

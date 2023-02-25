@@ -1,6 +1,8 @@
 package investing
 
 import (
+	"fmt"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -23,7 +25,7 @@ func TestGetAttrValue(t *testing.T) {
 		{
 			html:   `<div><input /></div>`,
 			result: "",
-			err:    &ParsingError{},
+			err:    fmt.Errorf("parse error"),
 		},
 	}
 
@@ -36,7 +38,7 @@ func TestGetAttrValue(t *testing.T) {
 		value, err := getAttrValue(selector, "id")
 
 		// Assert
-		assert.IsType(t, test.err, err)
+		assert.Equal(t, test.err, err)
 		assert.Equal(t, test.result, value)
 	}
 }
@@ -55,12 +57,12 @@ func TestParseAttrValueToInt(t *testing.T) {
 		{
 			html:   `<div><input/></div>`,
 			result: 0,
-			err:    &ParsingError{},
+			err:    fmt.Errorf("parse error"),
 		},
 		{
 			html:   `<div><input id="abc"/></div>`,
 			result: 0,
-			err:    &ParsingError{},
+			err:    &strconv.NumError{Func: "Atoi", Num: "abc", Err: strconv.ErrSyntax},
 		},
 	}
 
@@ -73,7 +75,7 @@ func TestParseAttrValueToInt(t *testing.T) {
 		value, err := parseAttrValueToInt(selector, "id")
 
 		// Assert
-		assert.IsType(t, test.err, err)
+		assert.Equal(t, test.err, err)
 		assert.Equal(t, test.result, value)
 	}
 }

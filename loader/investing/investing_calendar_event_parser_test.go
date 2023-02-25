@@ -1,6 +1,7 @@
 package investing
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -92,19 +93,19 @@ func Test_InvestingCalendarEventParser_parserTitle(t *testing.T) {
 						<h1 class="ecTitle float_lang_base_1 relativeAttr"></h1>
 					</section>`,
 			expectedResult: "",
-			err:            &ParsingError{},
+			err:            fmt.Errorf("parsing error"),
 		},
 		{
 			html: `<section id="leftColumn">
 						<h1>U.K. Core Retail Sales MoM	</h1>
 					</section>`,
 			expectedResult: "",
-			err:            &ParsingError{},
+			err:            fmt.Errorf("parsing error"),
 		},
 		{
 			html:           `<section id="leftColumn"></section>`,
 			expectedResult: "",
-			err:            &ParsingError{},
+			err:            fmt.Errorf("parsing error"),
 		},
 	}
 
@@ -216,7 +217,7 @@ func Test_InvestingCalendarEventParser_parseSentiment(t *testing.T) {
 						</div>
 					</div>`,
 			expectedResult: 0,
-			err:            &ParsingError{},
+			err:            fmt.Errorf("parse error"),
 		},
 		{
 			html: `<div id="overViewBox">
@@ -224,7 +225,7 @@ func Test_InvestingCalendarEventParser_parseSentiment(t *testing.T) {
 						</div>
 					</div>`,
 			expectedResult: 0,
-			err:            &ParsingError{},
+			err:            fmt.Errorf("parse error"),
 		},
 	}
 
@@ -267,7 +268,7 @@ func Test_InvestingCalendarEventParser_parseCountry(t *testing.T) {
 						</div>
 					</div>`,
 			expectedResult: "",
-			err:            &ParsingError{},
+			err:            fmt.Errorf("parse error"),
 		},
 	}
 

@@ -133,27 +133,20 @@ func (r *InvestingRepository) GetEventsScheduleByLanguage(ctx context.Context, l
 		return
 	}
 
-	return NewInvestingScheduleParser().ParseScheduleHtml(html)
+	return NewInvestingScheduleParser().ParseScheduleHtml(html, languageId)
 }
 
-func (r *InvestingRepository) getEventDetailsByLanguage(ctx context.Context, languageId, eventId int) (event []InvestingDataEntry, err error) {
+func (r *InvestingRepository) getEventDetailsByLanguage(ctx context.Context, languageId, eventId int) ([]InvestingDataEntry, error) {
 	html, err := r.source.LoadEventDetailsHtml(ctx, eventId, languageId)
-
 	if err != nil {
-		return
+		return nil, err
 	}
-
-	parser := NewInvestingCalendarEventParser()
-
-	_event, err := parser.ParseCalendarEventHtml(html)
-
+	event, err := NewInvestingCalendarEventParser().ParseCalendarEventHtml(html)
 	if err != nil {
-		return
+		return nil, err
 	}
-
-	_event.LanguageId = languageId
-
-	return []InvestingDataEntry{_event}, nil
+	event.LanguageId = languageId
+	return []InvestingDataEntry{event}, nil
 }
 
 func (r *InvestingRepository) getCountriesByLanguage(ctx context.Context, languageId int) (items []InvestingDataEntry, err error) {
